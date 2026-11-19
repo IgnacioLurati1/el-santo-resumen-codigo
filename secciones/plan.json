@@ -1,0 +1,20 @@
+{
+ "obligatorias": [
+  {
+   "anio": "Primero",
+   "n": 1,
+   "materia": "Materia de ejemplo",
+   "cursadas": "",
+   "aprobadas": ""
+  }
+ ],
+ "electivas": [
+  {
+   "nivel": "3° nivel",
+   "dictado": "Cuatr. | 4 HS",
+   "materia": "Electiva de ejemplo",
+   "cursadas": "1",
+   "aprobadas": ""
+  }
+ ]
+}

@@ -1,0 +1,16 @@
+[
+ {
+  "tipo": "Obligatorias",
+  "anio": "Primer año",
+  "dia": "Lunes",
+  "hora": "15:00",
+  "materia": "Materia de ejemplo"
+ },
+ {
+  "tipo": "Electivas",
+  "anio": "Tercer año",
+  "dia": "Jueves",
+  "hora": "18:00",
+  "materia": "Electiva de ejemplo"
+ }
+]

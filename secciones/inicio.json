@@ -1,0 +1,55 @@
+[
+ {
+  "titulo": "Todas las materias",
+  "texto": "El plan como mapa, con resumen, quiz y ejercicios de exámenes reales. Marcá lo que hiciste y te dice qué podés cursar.",
+  "href": "materias.html",
+  "tamano": "grande",
+  "icono": "mapa"
+ },
+ {
+  "titulo": "Banco de resúmenes",
+  "texto": "Lo que subieron otros alumnos, con los mejor votados primero. Leé, comentá o subí el tuyo.",
+  "href": "banco.html",
+  "icono": "pila",
+  "aspecto": "pila"
+ },
+ {
+  "titulo": "Consejos",
+  "texto": "Lo que aprendieron quienes ya cursaron, para toda la carrera y para cada materia, con los resúmenes que les sirvieron.",
+  "href": "consejos.html",
+  "icono": "foco",
+  "aspecto": "nota"
+ },
+ {
+  "titulo": "Sysacad Lindo",
+  "texto": "Extensión para Chrome o Edge que ordena Sysacad por año, con mapa de correlativas, modo oscuro y filtros. No guarda tu contraseña ni envía nada.",
+  "href": "sysacad-lindo.html",
+  "tamano": "mitad",
+  "icono": "pieza",
+  "aspecto": "pieza"
+ },
+ {
+  "titulo": "Super CVG",
+  "texto": "Panel no oficial del campus virtual de la UTN FRRO: entregas, archivos y notas en una sola pantalla. Del campus solo lee, y tu navegador habla directo con él.",
+  "href": "https://supercvg.lutastudios.com/",
+  "tamano": "mitad",
+  "icono": "birrete",
+  "aspecto": "cvg"
+ },
+ {
+  "titulo": "Protocolo de emergencia",
+  "texto": "¿Rendís mañana? Cada materia queda en lo justo para el parcial, con los exámenes y sus respuestas.",
+  "href": "materias.html",
+  "accion": "emergencia",
+  "icono": "sirena",
+  "aspecto": "cinta"
+ },
+ {
+  "titulo": "Armá tu propio resumen",
+  "texto": "Texto, fotos, notas al margen y los gráficos y simuladores de cada materia, con tus datos. Lo bajás o lo subís al banco.",
+  "href": "crear.html",
+  "tamano": "ancho",
+  "icono": "lapiz",
+  "aspecto": "renglones"
+ }
+]

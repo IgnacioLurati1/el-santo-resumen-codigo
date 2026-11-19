@@ -1,0 +1,14 @@
+{
+  "name": "el-santo-resumen",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node armar.mjs dist"
+  },
+  "dependencies": {
+    "highlight.js": "11.12.0",
+    "katex": "0.19.1",
+    "marked": "15.0.12"
+  }
+}

@@ -1,0 +1,13 @@
+[
+ {
+  "slug": "materia-de-ejemplo",
+  "nombre": "Materia de ejemplo",
+  "anio": 1,
+  "carpeta": "1° AÑO/Materia de ejemplo",
+  "n": 1,
+  "cursadas": [],
+  "aprobadas": [],
+  "dictado": "Anual",
+  "enPlan": true
+ }
+]

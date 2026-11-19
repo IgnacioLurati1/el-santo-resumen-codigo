@@ -1,0 +1,40 @@
+{
+  "nombre": "Materia de ejemplo",
+  "slug": "materia-de-ejemplo",
+  "assets": "../_",
+  "pie": "Materia inventada para mostrar cómo se arma una. Los apuntes reales no vienen en este repositorio.",
+  "grupos": [
+    {
+      "id": "tema",
+      "t": "Un tema",
+      "baja": "Una página de estudio con fórmulas y su quiz."
+    }
+  ],
+  "paginas": [
+    {
+      "id": "inicio",
+      "archivo": "index.html",
+      "nombre": "Para entender",
+      "fuente": "inicio.md",
+      "tipo": "inicio",
+      "desc": "Qué trae una materia y cómo se arma."
+    },
+    {
+      "id": "tema",
+      "archivo": "tema.html",
+      "nombre": "Un tema de ejemplo",
+      "fuente": "tema.md",
+      "tipo": "estudio",
+      "tituloQuiz": "Quiz del tema de ejemplo",
+      "desc": "Texto, una fórmula, una tabla y un bloque de aviso."
+    },
+    {
+      "id": "machete",
+      "archivo": "machete.html",
+      "nombre": "Hoja de repaso",
+      "fuente": "machete.md",
+      "tipo": "machete",
+      "desc": "Lo esencial en una hoja para imprimir."
+    }
+  ]
+}

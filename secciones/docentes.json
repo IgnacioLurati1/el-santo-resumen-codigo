@@ -1,0 +1,16 @@
+[
+ {
+  "depto": "Básicas",
+  "nombre": "Docente, Ejemplo",
+  "mail": "docente@ejemplo.com",
+  "nota": "",
+  "obs": ""
+ },
+ {
+  "depto": "Sistemas",
+  "nombre": "Otra Docente, Ejemplo",
+  "mail": "otra.docente@ejemplo.com",
+  "nota": "",
+  "obs": ""
+ }
+]

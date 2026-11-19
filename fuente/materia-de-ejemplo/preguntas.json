@@ -1,0 +1,13 @@
+[
+  {
+    "en": ["tema"],
+    "tipo": "mc",
+    "tema": "Suma de los primeros naturales",
+    "enlace": "tema.html#una-formula",
+    "origen": null,
+    "enunciado": "¿Cuánto da la suma de los primeros 4 números naturales?",
+    "opciones": ["6", "8", "10", "16"],
+    "correcta": 2,
+    "explicacion": "Con la fórmula, $\\frac{4 \\cdot 5}{2} = 10$."
+  }
+]

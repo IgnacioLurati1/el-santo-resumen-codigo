@@ -1,0 +1,8 @@
+{
+ "creador": "Nombre de ejemplo",
+ "contacto": "contacto@ejemplo.com",
+ "alumnos": [
+  "Alumna de ejemplo",
+  "Alumno de ejemplo"
+ ]
+}
