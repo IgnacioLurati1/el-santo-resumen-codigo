@@ -12,7 +12,7 @@ import katex from 'katex';
 import hljs from 'highlight.js';
 import { bloqueWidget, NOMBRES_BLOQUES, nombresDeInteractivos, prepararInteractivos, validarCreador } from './widgets.mjs';
 import { pieConAviso } from './aviso.mjs';
-import { SIN_VERIFICAR, SIN_VERIFICAR_FIN, banda, botonCuenta, botonesEmergencia, copiarServicio, scriptsServicio } from './servicio.mjs';
+import { SIN_VERIFICAR, SIN_VERIFICAR_FIN, banda, botonesEmergencia, copiarServicio, scriptsServicio } from './servicio.mjs';
 import { botonMenu, menu } from './sitio.mjs';
 import { icono } from './iconos.mjs';
 
@@ -286,9 +286,9 @@ function layout({ pagina, titulo, cuerpo, toc, desc, em = 'fuera', reportable = 
   const conInteractivos = hayInteractivos && cuerpo.includes(' data-w="interactivo"');
   const nav = `<li class="nav-todas"><a href="../materias.html">Todas las materias</a></li><li class="em-solo"><a href="emergencia.html"${pagina === 'emergencia' ? ' aria-current="page"' : ''}>Emergencia</a></li>${materia.paginas
     .map((p) => `<li class="em-fuera"><a href="${p.archivo}"${p.id === pagina ? ' aria-current="page"' : ''}>${esc(p.nombre)}</a></li>`)
-    .join('')}<li class="em-fuera"><a href="../banco.html?materia=${materia.slug}">Banco de resúmenes</a></li><li class="em-fuera"><a href="../consejos.html?materia=${materia.slug}">Consejos</a></li><li class="nav-em">${botonesEmergencia('b-sec')}</li><li class="nav-em em-fuera">${botonCuenta('b-tema')}</li>`;
+    .join('')}<li class="em-fuera"><a href="../banco.html?materia=${materia.slug}">Banco de resúmenes</a></li><li class="em-fuera"><a href="../consejos.html?materia=${materia.slug}">Consejos</a></li><li class="nav-em">${botonesEmergencia('b-sec')}</li>`;
   const indice = toc.length
-    ? `<nav class="toc" aria-label="En esta página"><p>En esta página</p><ul>${toc.map((t) => `<li class="n${t.n}${t.clase ? ` ${t.clase}` : ''}"><a href="#${t.id}">${esc(t.t)}</a></li>`).join('')}</ul></nav>`
+    ? `<nav class="toc"${estudio ? ' data-marcas' : ''} aria-label="En esta página"><p>En esta página</p><ul>${toc.map((t) => `<li class="n${t.n}${t.clase ? ` ${t.clase}` : ''}"><a href="#${t.id}">${esc(t.t)}</a></li>`).join('')}</ul></nav>`
     : '';
   return `<!doctype html>
 <html lang="es" data-tema="noche"${em === 'ver' ? '' : ` data-em-${em}`}>
@@ -301,7 +301,7 @@ function layout({ pagina, titulo, cuerpo, toc, desc, em = 'fuera', reportable = 
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
 <link rel="stylesheet" href="${materia.assets}/katex/katex.min.css">
 <link rel="stylesheet" href="${materia.assets}/utn.css">
 ${conW ? `<link rel="stylesheet" href="${materia.assets}/w.css">
@@ -314,6 +314,7 @@ ${conW ? `<link rel="stylesheet" href="${materia.assets}/w.css">
 <script src="${materia.assets}/sin-internet.js" defer></script>
 ${estudio ? `<script src="${materia.assets}/voz.js" defer></script>
 <script src="${materia.assets}/senaladores.js" defer></script>
+<script src="${materia.assets}/indice.js" defer></script>
 ` : ''}${examen ? `<script src="${materia.assets}/examen.js" defer></script>
 ` : ''}${conW ? `<script src="${materia.assets}/expr.js" defer></script>
 <script src="${materia.assets}/w.js" defer></script>
@@ -331,8 +332,7 @@ ${botonMenu}
 <button type="button" id="soloTomado" class="b-solo" aria-pressed="false">Solo lo que se toma</button>
 <button type="button" id="editar" class="b-tema" aria-pressed="false">Editar</button>
 <button type="button" id="foco" class="b-tema">Pantalla completa</button>
-<button type="button" id="accesibilidad" class="b-tema">Accesibilidad</button>
-<button type="button" id="tema" class="b-tema">Modo día</button>
+<button type="button" id="accesibilidad" class="b-tema">Configuración</button>
 </header>
 ${MENU}
 <div class="marco">
@@ -500,7 +500,7 @@ function seccionRendir() {
     html: `<section class="sec ex-entrada"><h2 id="rendir">Rendí un examen viejo</h2>
 <p>Elegís uno real y lo hacés con reloj, sin ver la resolución. Al entregar te corregís y ves qué repasar.</p>
 <ul class="ex-ultimos">${ultimos.map(tarjeta).join('')}</ul>
-<p class="ex-otros"><a href="ejercicios.html">Elegir otro en Ejercicios</a></p></section>`,
+<p class="ex-otros"><a href="ejercicios.html">Elegir otro en Ejercicios y parciales</a></p></section>`,
     toc: [{ n: 2, t: 'Rendí un examen viejo', id: 'rendir' }],
   };
 }
@@ -738,7 +738,7 @@ function paginaPdf() {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
 <link rel="stylesheet" href="${materia.assets}/katex/katex.min.css">
 <link rel="stylesheet" href="${materia.assets}/utn.css">
 ${conW ? `<link rel="stylesheet" href="${materia.assets}/w.css">
@@ -864,7 +864,7 @@ conPagina.forEach((e, i) => {
   const archivo = `ej-${e.slug}.html`;
   if (propuestas[e.slug]) toc.push(propuestas[e.slug].md ? { n: 2, t: 'Propuesta de respuesta', id: 'propuesta' } : { n: 2, t: 'Sin respuesta', id: 'propuesta', clase: 'em-solo' });
   fs.writeFileSync(path.join(destino, archivo), layout({ pagina: 'ejercicios', titulo: e.titulo, cuerpo, toc, desc: `Ejercicio de examen: ${e.titulo}.`, em: 'ver', examen: esExamen(e) }));
-  indiceBusqueda.push({ p: archivo, pn: 'Ejercicios', id: 'enunciado', t: e.titulo, x: texto(md.parse(e.enunciado)).slice(0, 900) });
+  indiceBusqueda.push({ p: archivo, pn: 'Ejercicios y parciales', id: 'enunciado', t: e.titulo, x: texto(md.parse(e.enunciado)).slice(0, 900) });
 });
 const emergencia = paginaEmergencia();
 fs.writeFileSync(path.join(destino, 'emergencia.html'), layout({ pagina: 'emergencia', titulo: 'Emergencia', cuerpo: emergencia.cuerpo, toc: emergencia.toc, desc: `Lo necesario para rendir ${materia.nombre}.`, em: 'solo', reportable: true }));
@@ -886,7 +886,7 @@ fs.writeFileSync(path.join(destino, 'buscar.js'), `window.UTN_BUSCAR=${JSON.stri
 const assets = path.join(salida, '_');
 fs.mkdirSync(path.join(assets, 'katex'), { recursive: true });
 copiarServicio(aqui, assets);
-for (const f of ['utn.css', 'utn.js', 'tema.js', 'piezas.js', 'editar.js', 'ajustes.js', 'menu.js', 'expr.js', 'w.js', 'w.css', 'pdf.css', 'pdf.js', 'sin-internet.js', 'examen.js', 'voz.js', 'senaladores.js']) fs.copyFileSync(path.join(aqui, 'plantilla', f), path.join(assets, f));
+for (const f of ['utn.css', 'utn.js', 'tema.js', 'piezas.js', 'editar.js', 'ajustes.js', 'menu.js', 'expr.js', 'w.js', 'w.css', 'pdf.css', 'pdf.js', 'sin-internet.js', 'examen.js', 'voz.js', 'senaladores.js', 'indice.js']) fs.copyFileSync(path.join(aqui, 'plantilla', f), path.join(assets, f));
 fs.cpSync(path.join(aqui, 'plantilla', 'three'), path.join(assets, 'three'), { recursive: true });
 const katexDist = path.dirname(createRequire(import.meta.url).resolve('katex/dist/katex.min.css'));
 fs.copyFileSync(path.join(katexDist, 'katex.min.css'), path.join(assets, 'katex', 'katex.min.css'));

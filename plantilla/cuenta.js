@@ -23,6 +23,22 @@
     r?.(ok);
   };
   dlg.addEventListener('close', () => terminar(Boolean(S.usuario())));
+  // A tap outside closes it, unless something is half written (the password to delete the account, a username). The
+  // press has to start outside too: selecting text inside and letting go outside is not a tap outside.
+  const afuera = (e) => {
+    const r = dlg.getBoundingClientRect();
+    return e.target === dlg && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom);
+  };
+  const aMedias = () => [...dlg.querySelectorAll('input:not([type="checkbox"])')].some((i) => i.value);
+  let desdeAfuera = false;
+  dlg.addEventListener('pointerdown', (e) => {
+    desdeAfuera = afuera(e);
+  });
+  dlg.addEventListener('click', (e) => {
+    const cerrar = desdeAfuera && afuera(e) && !aMedias();
+    desdeAfuera = false;
+    if (cerrar) dlg.close();
+  });
 
   const campo = (texto, input, ayuda) => {
     const id = input.id;

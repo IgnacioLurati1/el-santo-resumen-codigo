@@ -18,7 +18,7 @@ export const SECCIONES = [
   { archivo: 'novedades.html', nombre: 'Notas del parche', icono: 'curita', discreto: true },
 ];
 // Pages reached from another one, outside the list of sections.
-export const APARTE = [{ archivo: 'subir.html', nombre: 'Subir un resumen', icono: 'subir' }, { archivo: 'crear.html', nombre: 'Armar un resumen', icono: 'lapiz' }];
+export const APARTE = [{ archivo: 'subir.html', nombre: 'Subir un resumen', icono: 'subir' }, { archivo: 'mis-resumenes.html', nombre: 'Mis resúmenes', icono: 'carpeta' }, { archivo: 'crear.html', nombre: 'Armar un resumen', icono: 'lapiz' }];
 
 // Only same-site paths or https links: the file is edited by hand, and a typo must not become a script link.
 export const enlace = (href) => {
@@ -48,7 +48,7 @@ export const filaEnlaces = (sin) => {
 
 // The order Ignacio chose. A home card that is not here goes right after the other cards, and a new section before
 // the discreet ones.
-const ORDEN = ['index.html', 'materias.html', 'emergencia', 'banco.html', 'subir.html', 'crear.html', 'consejos.html', 'sysacad-lindo.html', 'plan.html', 'mesas.html', 'docentes.html'];
+const ORDEN = ['index.html', 'materias.html', 'emergencia', 'banco.html', 'subir.html', 'mis-resumenes.html', 'crear.html', 'consejos.html', 'sysacad-lindo.html', 'plan.html', 'mesas.html', 'docentes.html'];
 const TRAS_TARJETAS = ORDEN.indexOf('sysacad-lindo.html') + 0.5;
 
 const entradasMenu = () => {

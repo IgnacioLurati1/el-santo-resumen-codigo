@@ -210,14 +210,18 @@ class Helice extends T.Curve {
   }
 }
 
+// The halo's light, a band around the ring (radius 0.62) on a disc of radius BRILLO. Tilted like the ring, the disc
+// reaches 0.343 * BRILLO below it: with 1.2 its edge stays 0.09 above the book.
+const BRILLO = 1.2;
 const brillo = () => {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d');
-  const r = g.createRadialGradient(128, 128, 60, 128, 128, 128);
+  const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
   r.addColorStop(0, 'rgba(255, 228, 92, 0)');
-  r.addColorStop(0.55, 'rgba(255, 228, 92, .55)');
-  r.addColorStop(0.7, 'rgba(255, 228, 92, .18)');
+  r.addColorStop(0.3, 'rgba(255, 228, 92, 0)');
+  r.addColorStop(0.6, 'rgba(255, 228, 92, .7)');
+  r.addColorStop(0.72, 'rgba(255, 228, 92, .25)');
   r.addColorStop(1, 'rgba(255, 228, 92, 0)');
   g.fillStyle = r;
   g.fillRect(0, 0, 256, 256);
@@ -281,6 +285,14 @@ export async function armar(caja) {
   const hojaA = new T.Mesh(geoHoja, ladoA);
   bisagra.add(hojaA);
   libro.add(bisagra);
+  // The turned sheets pile up over the back cover. One plain sheet stands for the pile, between the cover and the sheet
+  // that lands: when that one goes back to the front for the next turn, the pile still looks the same from behind,
+  // instead of the sheet vanishing through the cover.
+  const pila = new T.Mesh(new T.PlaneGeometry(ANCHO, ALTO), new T.MeshStandardMaterial({ color: new T.Color().setRGB(0.815, 0.846, 0.913), roughness: 0.9 }));
+  pila.rotation.y = Math.PI;
+  pila.position.z = -GRUESO / 2 - 0.006;
+  pila.visible = false;
+  libro.add(pila);
   const doblar = (angulo) => {
     bisagra.rotation.y = -angulo;
     // Around the coil the hinge goes from the front cover to the back one.
@@ -299,11 +311,14 @@ export async function armar(caja) {
   aureola.position.set(0.05, ALTO / 2 + 0.5, 0.05);
   aureola.rotation.x = Math.PI / 2 - 0.35;
   const anillo = new T.Mesh(new T.TorusGeometry(0.62, 0.032, 12, 96), new T.MeshBasicMaterial({ color: '#ffe45c' }));
-  const luz = new T.Sprite(new T.SpriteMaterial({ map: textura(brillo(), renderer), blending: T.AdditiveBlending, depthWrite: false, transparent: true }));
-  luz.scale.set(2.3, 2.3, 1);
-  luz.position.set(0.05, ALTO / 2 + 0.5, 0.05);
-  aureola.add(anillo);
-  libro.add(aureola, luz);
+  // The light lies in the ring's own plane, so it stays above the book from every side and the book hides it when it is
+  // in front. A glow that always faces the camera reached 0.65 into the book and showed through its top.
+  const luz = new T.Mesh(
+    new T.PlaneGeometry(BRILLO * 2, BRILLO * 2),
+    new T.MeshBasicMaterial({ map: textura(brillo(), renderer), blending: T.AdditiveBlending, depthWrite: false, transparent: true, side: T.DoubleSide }),
+  );
+  aureola.add(anillo, luz);
+  libro.add(aureola);
 
   // One sheet per subject. Each year is its own orbit, tilted a little more than the one before.
   const N = materias.length;
@@ -517,8 +532,11 @@ export async function armar(caja) {
       doblar(0);
       ladoA.map = paginas[0];
       frente.map = paginas[1];
+      pila.visible = false;
       vuelta = -1;
     } else {
+      // From the end of the first turn on, there is always a sheet on the back.
+      pila.visible = reloj >= CADA;
       const fase = reloj % CADA;
       const nueva = Math.floor(reloj / CADA);
       if (nueva !== vuelta) {

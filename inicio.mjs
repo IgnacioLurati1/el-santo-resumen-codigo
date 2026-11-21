@@ -66,7 +66,7 @@ export const armarInicio = ({ aqui, fuente, salida, materias, listo, pasadas }) 
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@500;600&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
 <link rel="stylesheet" href="_/utn.css">
 <link rel="stylesheet" href="_/carrera.css">
 <link rel="stylesheet" href="_/inicio.css">
@@ -86,9 +86,8 @@ ${botonMenu}
 <div class="c-acciones">
 <button type="button" id="foco" hidden></button>
 ${botonCuenta('b-tema')}
-<button type="button" id="accesibilidad" class="b-tema">Accesibilidad</button>
+<button type="button" id="accesibilidad" class="b-tema">Configuración</button>
 ${botonesEmergencia('b-tema')}
-<button type="button" id="tema" class="b-tema">Modo día</button>
 </div>
 </header>
 ${menu({ actual: 'index.html' })}

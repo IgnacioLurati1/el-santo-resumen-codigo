@@ -32,6 +32,8 @@
   const indiceLista = $('crIndice');
   const chips = $('crChips');
   const iEtiqueta = $('crEtiqueta');
+  const bEtiqueta = $('crEtiquetaSumar');
+  const bDeshacer = $('crDeshacer');
 
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const sinControl = (s) => s.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '');
@@ -175,11 +177,24 @@
   }
   // The status line stays in the page, hidden only to the eye while empty: a reader announces what changes inside a
   // live region that already exists, not one that shows up with its text.
-  const decir = (t, error) => {
+  // After a change of the parts, «Deshacer» shows beside the message for a while (Control+Z and the menu always do it).
+  let tDeshacer = 0;
+  const decir = (t, error, deshacible) => {
     salida.textContent = t;
     salida.classList.toggle('vh', !t);
     if (error) salida.dataset.error = '1';
     else salida.removeAttribute('data-error');
+    clearTimeout(tDeshacer);
+    if (!deshacible) {
+      if (document.activeElement !== bDeshacer) bDeshacer.hidden = true;
+      return;
+    }
+    bDeshacer.hidden = false;
+    const esconder = () => {
+      if (document.activeElement === bDeshacer) tDeshacer = setTimeout(esconder, 4000);
+      else bDeshacer.hidden = true;
+    };
+    tDeshacer = setTimeout(esconder, 12000);
   };
   // A simple «¿Seguro?», with the site's dialog. Closing it puts the focus back where it was.
   const preguntar = (texto, siTexto, alSi, alNo) => {
@@ -547,9 +562,22 @@
   // ----- The sheet. Each part is a section: the part itself and, beside it, its margin. Moving one moves its node, so
   // graphs stay alive. New parts go under the one marked (the last one touched), or at the end.
   const bloqueDe = new WeakMap();
+  // What each part's own controls do, for its menu: move, take out, the space before it and the margin.
+  const accionesDe = new WeakMap();
   const NOMBRES = { h: 'el título', p: 'el texto', n: 'el recuadro', m: 'la fórmula', f: 'la foto', g: 'el gráfico', s: 'el simulador' };
   const nombreDe = (b) => NOMBRES[b.k === 'o' ? (b.o.f !== undefined ? 'f' : b.o.g === 'interactivo' ? 's' : 'g') : b.k];
+  const delDe = (nombre) => nombre.replace(/^el /, 'del ').replace(/^la /, 'de la ');
   const indice = (sec) => [...hoja.children].indexOf(sec);
+  const campoDeParte = (sec) => sec.querySelector('.cr-h-campo, .cr-texto, .cr-formula-campo, figcaption, figure');
+
+  // ----- Undo of what changes the parts: add, take out, move, duplicate, change kind, start over. Typing keeps the
+  // browser's own undo inside each field. A step keeps the list of parts as it was, the same objects: what was typed
+  // later in a part that stays is not lost.
+  const pasos = [];
+  const recordar = () => {
+    pasos.push({ doc, bloques: doc.bloques.slice(), t: Date.now() });
+    if (pasos.length > 40) pasos.shift();
+  };
   let activa = null;
   const pintarDonde = () => {
     donde.textContent = activa && activa.isConnected ? 'Se suma debajo de la parte marcada.' : 'Se suma al final.';
@@ -568,6 +596,11 @@
   hoja.addEventListener('pointerdown', (e) => {
     const sec = e.target.closest('.cr-bloque');
     if (sec) marcarActiva(sec);
+  });
+  // Same as «Sumar»: a mouse press on a part's buttons leaves the focus where it was, or the format bar of the text
+  // being written would fold and move the button away before the click.
+  hoja.addEventListener('mousedown', (e) => {
+    if (e.button === 0 && e.target.closest('.cr-barra button, .cr-margen-b')) e.preventDefault();
   });
   const pintarVacio = () => {
     vacio.hidden = doc.bloques.length > 0;
@@ -634,11 +667,18 @@
     };
     if (b.m) escribir(false);
     else vacioMargen();
+    accionesDe.get(sec).margen = () => {
+      const t = lado.querySelector('textarea');
+      if (t) t.focus();
+      else escribir(true);
+    };
     return lado;
   };
   const armarBloque = (b) => {
     const sec = crear('section', `cr-bloque cr-${b.k}`);
     bloqueDe.set(sec, b);
+    const acciones = {};
+    accionesDe.set(sec, acciones);
     ponerEspacio(sec, b);
     const nombre = nombreDe(b);
     const parte = crear('div', 'cr-parte');
@@ -646,8 +686,18 @@
     const propios = crear('div', 'cr-barra-izq');
     const mover = crear('div', 'cr-barra-der');
     const arriba = boton('Subir', 'b-sec b-chico', `Subir ${nombre}`);
+    arriba.setAttribute('aria-keyshortcuts', 'Alt+Shift+ArrowUp');
     const abajo = boton('Bajar', 'b-sec b-chico', `Bajar ${nombre}`);
+    abajo.setAttribute('aria-keyshortcuts', 'Alt+Shift+ArrowDown');
     const sacar = boton('Sacar', 'b-sec b-chico', `Sacar ${nombre}`);
+    const mas = boton('Más', 'b-sec b-chico cr-mas', `Más opciones ${delDe(nombre)}`);
+    mas.setAttribute('aria-haspopup', 'menu');
+    mas.setAttribute('aria-expanded', 'false');
+    mas.addEventListener('click', (e) => {
+      const r = mas.getBoundingClientRect();
+      marcarActiva(sec);
+      abrirMenu(menuDeBloque(sec, null), { x: r.right, y: r.bottom + 4, arriba: r.top - 4, alinear: 'derecha', desde: mas, teclado: e.detail === 0, etiqueta: `Opciones ${delDe(nombre)}` });
+    });
     const sEspacio = elegir(`Espacio antes de ${nombre}`, ESPACIOS.map((t, i) => [i, t]), espacio(b.e));
     sEspacio.addEventListener('change', () => {
       const e = Number(sEspacio.value);
@@ -656,26 +706,36 @@
       ponerEspacio(sec, b);
       guardarYa();
     });
-    mover.append(sEspacio, arriba, abajo, sacar);
-    const moverA = (paso) => {
+    acciones.espacio = (e) => {
+      sEspacio.value = String(e);
+      sEspacio.dispatchEvent(new Event('change'));
+      decir(`Espacio antes ${delDe(nombre)}: ${ESPACIOS[e].toLowerCase()}.`);
+    };
+    mover.append(sEspacio, arriba, abajo, sacar, mas);
+    // The neighbour moves, not the part: what has the focus inside it keeps it.
+    const moverA = (paso, conBoton = true) => {
       const i = indice(sec);
       const j = i + paso;
       if (j < 0 || j >= doc.bloques.length) {
         decir(paso < 0 ? 'Ya es la primera parte.' : 'Ya es la última parte.');
         return;
       }
+      recordar();
       [doc.bloques[i], doc.bloques[j]] = [doc.bloques[j], doc.bloques[i]];
-      if (paso < 0) hoja.insertBefore(sec, hoja.children[j]);
+      if (paso < 0) hoja.insertBefore(hoja.children[j], sec.nextElementSibling);
       else hoja.insertBefore(hoja.children[j], sec);
       guardarYa();
       pintarIndice();
-      (paso < 0 ? arriba : abajo).focus();
+      if (conBoton) (paso < 0 ? arriba : abajo).focus();
+      sec.scrollIntoView({ block: 'nearest' });
       decir(`Quedó en el lugar ${j + 1} de ${doc.bloques.length}.`);
     };
     arriba.addEventListener('click', () => moverA(-1));
     abajo.addEventListener('click', () => moverA(1));
+    acciones.mover = moverA;
     const sacarYa = () => {
       const i = indice(sec);
+      recordar();
       doc.bloques.splice(i, 1);
       const fig = sec.querySelector('.ag-w');
       if (fig) P.soltar(fig);
@@ -685,14 +745,15 @@
       pintarVacio();
       pintarIndice();
       const vecino = hoja.children[Math.min(i, hoja.children.length - 1)];
-      (vecino ? vecino.querySelector('input,textarea,[contenteditable],figcaption,figure') : $('crTexto')).focus();
-      decir(`Se sacó ${nombre}.`);
+      (vecino ? campoDeParte(vecino) : $('crTexto')).focus();
+      decir(`Se sacó ${nombre}.`, false, true);
     };
     // An empty part goes at once; one with something in it asks first.
-    sacar.addEventListener('click', () => {
+    acciones.sacar = () => {
       if (!tieneAlgo(b)) sacarYa();
       else preguntar(`Se saca ${nombre} del resumen${b.m ? ', con su comentario al margen' : ''}.`, 'Sí, sacar', sacarYa);
-    });
+    };
+    sacar.addEventListener('click', acciones.sacar);
     let cuerpo;
     if (b.k === 'h') {
       const sNivel = elegir('Tipo de título', [[2, 'Título'], [3, 'Subtítulo']], b.n);
@@ -764,14 +825,19 @@
     sec.append(parte, armarMargen(sec, b));
     return sec;
   };
-  const poner = (b) => {
+  // Where a new part goes: { sec, antes } next to a part, { fin } at the end; without it, under the marked one.
+  const poner = (b, lugar) => {
     if (doc.bloques.length >= MAX_BLOQUES) {
       decir('Llegaste al máximo de partes de un resumen.', true);
       return null;
     }
-    const i = activa && activa.isConnected ? indice(activa) + 1 : doc.bloques.length;
+    let i = activa && activa.isConnected ? indice(activa) + 1 : doc.bloques.length;
+    if (lugar?.fin) i = doc.bloques.length;
+    else if (lugar?.sec?.isConnected) i = indice(lugar.sec) + (lugar.antes ? 0 : 1);
+    recordar();
     doc.bloques.splice(i, 0, b);
     if (!guardarYa()) {
+      pasos.pop();
       doc.bloques.splice(i, 1);
       guardarYa();
       return null;
@@ -815,23 +881,36 @@
   const sumarEtiqueta = (enfocar) => {
     const nuevas = iEtiqueta.value.split(',').map((x) => P.corto(x, 30)).filter(Boolean);
     iEtiqueta.value = '';
-    let cambio = false;
+    pintarBotonEtiqueta();
+    const sumadas = [];
     for (const t of nuevas) {
       if (doc.etiquetas.length >= MAX_ETIQUETAS) break;
       if (doc.etiquetas.includes(t)) continue;
       doc.etiquetas.push(t);
-      cambio = true;
+      sumadas.push(t);
     }
-    if (!cambio) {
+    if (!sumadas.length) {
       if (nuevas.length) decir(nuevas.length > 1 ? 'Esas etiquetas ya están.' : 'Esa etiqueta ya está.');
       return;
     }
     guardarYa();
     pintarEtiquetas();
+    decir(sumadas.length > 1 ? `Se sumaron las etiquetas ${sumadas.join(', ')}.` : `Se sumó la etiqueta ${sumadas[0]}.`);
     if (!enfocar) return;
     if (iEtiqueta.disabled) chips.querySelector('li:last-child .cr-chip-x')?.focus();
     else iEtiqueta.focus();
   };
+  // «Sumar» beside what is being typed, for a finger or a mouse: the keyboard has Enter. A press keeps the focus in the
+  // field, so leaving it doesn't add the tag first.
+  const pintarBotonEtiqueta = () => {
+    bEtiqueta.hidden = !iEtiqueta.value.trim();
+  };
+  iEtiqueta.addEventListener('input', pintarBotonEtiqueta);
+  bEtiqueta.addEventListener('pointerdown', (e) => e.preventDefault());
+  bEtiqueta.addEventListener('click', () => {
+    sumarEtiqueta(true);
+    pintarBotonEtiqueta();
+  });
   iEtiqueta.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
@@ -909,54 +988,534 @@
     guardar();
   });
 
-  $('crTitulo2').addEventListener('click', () => poner({ k: 'h', t: '', n: 2 })?.querySelector('input').focus());
-  $('crTexto').addEventListener('click', () => poner({ k: 'p', x: '' })?.querySelector('.cr-texto').focus());
-  $('crNota').addEventListener('click', () => poner({ k: 'n', tipo: 'ojo', x: '' })?.querySelector('.cr-texto').focus());
-  $('crFormula').addEventListener('click', () => poner({ k: 'm', t: '' })?.querySelector('textarea').focus());
+  // ----- Adding a part: from «Sumar», from a menu (above or under a part, or at the end of the sheet).
+  const TIPOS = [
+    ['h', 'Título', 'Sumar un título'],
+    ['p', 'Texto', 'Sumar texto'],
+    ['n', 'Recuadro', 'Sumar un recuadro'],
+    ['m', 'Fórmula', 'Sumar una fórmula'],
+    ['f', 'Foto', 'Sumar una foto'],
+    ['g', 'Gráfico', 'Sumar un gráfico o un simulador'],
+  ];
+  const pesoFotos = () => doc.bloques.reduce((t, b) => t + (b.k === 'o' && b.o.f ? b.o.f.length : 0), 0);
+  const sumar = async (tipo, lugar) => {
+    if (tipo === 'h') poner({ k: 'h', t: '', n: 2 }, lugar)?.querySelector('input').focus();
+    else if (tipo === 'p') poner({ k: 'p', x: '' }, lugar)?.querySelector('.cr-texto').focus();
+    else if (tipo === 'n') poner({ k: 'n', tipo: 'ojo', x: '' }, lugar)?.querySelector('.cr-texto').focus();
+    else if (tipo === 'm') poner({ k: 'm', t: '' }, lugar)?.querySelector('textarea').focus();
+    else if (tipo === 'f') {
+      const f = await P.elegirArchivo();
+      if (!f) return;
+      decir('Preparando la foto…');
+      const r = await P.achicar(f);
+      if (r.error) {
+        decir(r.error, true);
+        return;
+      }
+      if (pesoFotos() + r.url.length > P.MAX_FOTOS) {
+        decir('Ya hay muchas fotos en este resumen. Sacá alguna para sumar otra.', true);
+        return;
+      }
+      poner({ k: 'o', o: { f: r.url, t: '' } }, lugar)?.querySelector('figcaption').focus();
+    } else if (tipo === 'g') {
+      // Graphs and simulators are the subject's, so the subject comes first. Each piece keeps its own afterwards.
+      if (!doc.materia) {
+        decir('Elegí la materia antes de sumar un gráfico.', true);
+        sMateria.focus();
+        return;
+      }
+      decir('Buscando los gráficos de la materia…');
+      let o = null;
+      try {
+        o = await P.elegirGrafico(`${doc.materia}/figuras.json`, doc.materia, () => decir(''));
+      } catch {
+        decir('No se pudieron cargar los gráficos. Probá recargar la página.', true);
+        return;
+      }
+      if (!o) return;
+      const sec = poner({ k: 'o', o }, lugar);
+      if (sec) {
+        sec.querySelector('figure').focus();
+        sec.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  };
+  for (const [tipo, id] of [['h', 'crTitulo2'], ['p', 'crTexto'], ['n', 'crNota'], ['m', 'crFormula'], ['f', 'crFoto'], ['g', 'crGrafico']]) $(id).addEventListener('click', () => sumar(tipo));
   // A mouse press leaves the focus where it was. If the marked part lost it, its bar would fold, the page would get
   // shorter and the button would move away before the click.
   document.querySelector('.cr-sumar-b').addEventListener('mousedown', (e) => {
     if (e.button === 0 && e.target.closest('button')) e.preventDefault();
   });
-  const pesoFotos = () => doc.bloques.reduce((t, b) => t + (b.k === 'o' && b.o.f ? b.o.f.length : 0), 0);
-  $('crFoto').addEventListener('click', async () => {
-    const f = await P.elegirArchivo();
-    if (!f) return;
-    decir('Preparando la foto…');
-    const r = await P.achicar(f);
-    if (r.error) {
-      decir(r.error, true);
-      return;
+
+  // ----- Changing a part's kind keeps its words, the space before it and its margin.
+  const plano = (lista) => lista.map((x) => (typeof x === 'string' ? x : x.t === 'br' ? '\n' : plano(x.h))).join('');
+  const textoDe = (b) => (b.k === 'h' || b.k === 'm' ? b.t : leerHtml(b.x).map((x) => (x.t === 'p' ? plano(x.h) : x.h.map((li) => `- ${plano(li.h)}`).join('\n'))).join('\n\n'));
+  const CAMBIOS = [['h2', 'Título'], ['h3', 'Subtítulo'], ['p', 'Texto'], ...Object.entries(NOTAS).map(([k, t]) => [`n:${k}`, `Recuadro: ${t}`]), ['m', 'Fórmula']];
+  const tipoDe = (b) => (b.k === 'h' ? `h${b.n}` : b.k === 'n' ? `n:${b.tipo}` : b.k);
+  const nombreCambio = (k) => (k.startsWith('n:') ? `recuadro «${NOTAS[k.slice(2)]}»` : { h2: 'título', h3: 'subtítulo', p: 'texto', m: 'fórmula' }[k]);
+  const cambiarA = (sec, destino) => {
+    const b = bloqueDe.get(sec);
+    if (!b || b.k === 'o' || tipoDe(b) === destino) return;
+    const comoTexto = () => (b.k === 'p' || b.k === 'n' ? b.x : aHtml(deTexto(sinControl(textoDe(b)))));
+    let nb;
+    if (destino === 'h2' || destino === 'h3') nb = { k: 'h', t: P.corto(textoDe(b), 200), n: destino === 'h3' ? 3 : 2 };
+    else if (destino === 'p') nb = { k: 'p', x: comoTexto() };
+    else if (destino === 'm') nb = { k: 'm', t: sinControl(textoDe(b)).slice(0, MAX_FORMULA) };
+    else nb = { k: 'n', tipo: destino.slice(2), x: comoTexto() };
+    if (b.e !== undefined) nb.e = b.e;
+    if (b.m) nb.m = b.m;
+    recordar();
+    doc.bloques[indice(sec)] = nb;
+    const otra = armarBloque(nb);
+    const eraActiva = activa === sec;
+    sec.replaceWith(otra);
+    if (eraActiva) {
+      activa = null;
+      marcarActiva(otra);
     }
-    if (pesoFotos() + r.url.length > P.MAX_FOTOS) {
+    guardarYa();
+    pintarIndice();
+    campoDeParte(otra).focus();
+    decir(`Quedó como ${nombreCambio(destino)}.`, false, true);
+  };
+  const duplicar = (sec) => {
+    const b = bloqueDe.get(sec);
+    if (b.k === 'o' && b.o.f !== undefined && pesoFotos() + b.o.f.length > P.MAX_FOTOS) {
       decir('Ya hay muchas fotos en este resumen. Sacá alguna para sumar otra.', true);
       return;
     }
-    const sec = poner({ k: 'o', o: { f: r.url, t: '' } });
-    if (sec) sec.querySelector('figcaption').focus();
-  });
-  // Graphs and simulators are the subject's, so the subject comes first. Each piece keeps its own afterwards.
-  $('crGrafico').addEventListener('click', async () => {
-    if (!doc.materia) {
-      decir('Elegí la materia antes de sumar un gráfico.', true);
-      sMateria.focus();
+    const otra = poner(structuredClone(b), { sec });
+    if (!otra) return;
+    campoDeParte(otra).focus();
+    decir(`Se duplicó ${nombreDe(b)}.`, false, true);
+  };
+
+  // ----- Undo. The part that changed takes the focus.
+  const escrito = new WeakMap();
+  hoja.addEventListener('input', (e) => escrito.set(e.target, Date.now()));
+  const deshacer = () => {
+    const paso = pasos.pop();
+    if (!paso) {
+      decir('No hay nada para deshacer.');
       return;
     }
-    decir('Buscando los gráficos de la materia…');
-    let o = null;
-    try {
-      o = await P.elegirGrafico(`${doc.materia}/figuras.json`, doc.materia, () => decir(''));
-    } catch {
-      decir('No se pudieron cargar los gráficos. Probá recargar la página.', true);
-      return;
-    }
-    if (!o) return;
-    const sec = poner({ k: 'o', o });
+    const antes = doc.bloques;
+    let i = 0;
+    while (i < antes.length && i < paso.bloques.length && antes[i] === paso.bloques[i]) i += 1;
+    doc = paso.doc;
+    doc.bloques = paso.bloques;
+    guardarYa();
+    pintar();
+    const sec = hoja.children[Math.min(i, hoja.children.length - 1)];
     if (sec) {
-      sec.querySelector('figure').focus();
-      sec.scrollIntoView({ block: 'nearest' });
+      marcarActiva(sec);
+      campoDeParte(sec).focus();
+    } else $('crTexto').focus();
+    decir('Se deshizo el último cambio.', false, pasos.length > 0);
+  };
+  bDeshacer.addEventListener('click', deshacer);
+  // Control+Z undoes a change of the parts outside the fields, and in a field nothing was typed in since that change.
+  document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z' || !pasos.length || menu) return;
+    if (document.querySelector('dialog[open]')) return;
+    const campo = e.target.closest?.('input, textarea, select, [contenteditable="true"]');
+    if (campo && (!hoja.contains(campo) || (escrito.get(campo) || 0) > pasos.at(-1).t)) return;
+    e.preventDefault();
+    deshacer();
+  });
+
+  // ----- The menu of the sheet and of each part: the right button, the Menu key or Shift+F10, a long press on a phone
+  // and each part's «Más». It works like the system's: arrows, Home and End, a letter jumps to its option, right and
+  // left open and close a submenu, Esc closes and the focus goes back where it was. Shift with the right button leaves
+  // the browser's own menu, for its spelling suggestions.
+  const SVG = 'http://www.w3.org/2000/svg';
+  const conPopover = typeof HTMLElement.prototype.showPopover === 'function';
+  const opcionDe = new WeakMap();
+  const padreDe = new WeakMap();
+  let menu = null;
+  let tSub = 0;
+  const opciones = (p) => [...p.querySelectorAll('.cr-menu-i')];
+  const cerrarDesde = (nivel) => {
+    while (menu && menu.paneles.length > nivel) {
+      const p = menu.paneles.pop();
+      padreDe.get(p)?.setAttribute('aria-expanded', 'false');
+      p.remove();
+    }
+  };
+  const cerrarMenu = (devolver) => {
+    if (!menu) return;
+    const m = menu;
+    cerrarDesde(0);
+    menu = null;
+    m.ac.abort();
+    m.desde?.setAttribute('aria-expanded', 'false');
+    if (devolver) m.volver();
+  };
+  // The focus and the selection as they were, to go back to them.
+  const guardarFoco = (desde) => {
+    if (desde) return () => desde.isConnected && desde.focus({ preventScroll: true });
+    const el = document.activeElement;
+    const sel = getSelection();
+    const r = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+    const ini = typeof el?.selectionStart === 'number' ? [el.selectionStart, el.selectionEnd] : null;
+    return () => {
+      if (!el || !el.isConnected || el === document.body) return;
+      el.focus({ preventScroll: true });
+      if (el.isContentEditable && r && el.contains(r.startContainer)) {
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } else if (ini) el.setSelectionRange(...ini);
+    };
+  };
+  const ubicar = (p, o) => {
+    const m = 8;
+    const W = document.documentElement.clientWidth;
+    const H = innerHeight;
+    const w = p.offsetWidth;
+    const h = p.offsetHeight;
+    let x;
+    let y;
+    if (o.junto) {
+      // Beside its option; on a narrow screen, over its menu and under the option.
+      const r = o.junto.getBoundingClientRect();
+      x = r.right - 3;
+      y = r.top - 5;
+      if (x + w > W - m) x = r.left - w + 3;
+      if (x < m) {
+        x = o.junto.closest('.cr-menu').getBoundingClientRect().left + 16;
+        y = r.bottom - 4;
+      }
+    } else {
+      x = o.alinear === 'derecha' ? o.x - w : o.x;
+      if (x + w > W - m) x = o.x - w;
+      y = o.y;
+      if (y + h > H - m) y = (o.arriba ?? o.y) - h;
+    }
+    x = Math.max(m, Math.min(x, W - w - m));
+    y = Math.max(m, Math.min(y, H - h - m));
+    p.style.left = `${Math.round(x)}px`;
+    p.style.top = `${Math.round(y)}px`;
+    // It grows from where it was opened.
+    const ox = o.junto ? (x < o.junto.getBoundingClientRect().left ? 'right' : 'left') : (o.x ?? x) <= x + w / 2 ? 'left' : 'right';
+    const oy = o.junto ? 'top' : (o.y ?? y) <= y + h / 2 ? 'top' : 'bottom';
+    p.style.setProperty('--cr-origen', `${ox} ${oy}`);
+  };
+  const flecha = () => {
+    const s = document.createElementNS(SVG, 'svg');
+    s.setAttribute('viewBox', '0 0 16 16');
+    s.setAttribute('class', 'cr-menu-flecha');
+    s.setAttribute('aria-hidden', 'true');
+    const d = document.createElementNS(SVG, 'path');
+    d.setAttribute('d', 'M6 3.5 10.5 8 6 12.5');
+    s.append(d);
+    return s;
+  };
+  const abrirSub = (b, enfocar) => {
+    const it = opcionDe.get(b);
+    const nivel = menu.paneles.indexOf(b.closest('.cr-menu')) + 1;
+    const abierto = menu.paneles[nivel];
+    if (abierto && padreDe.get(abierto) === b) {
+      if (enfocar) opciones(abierto)[0]?.focus();
+      return;
+    }
+    cerrarDesde(nivel);
+    const p = panel(it.sub, it.texto);
+    padreDe.set(p, b);
+    menu.paneles.push(p);
+    mostrar(p);
+    ubicar(p, { junto: b });
+    b.setAttribute('aria-expanded', 'true');
+    if (enfocar) opciones(p)[0]?.focus();
+  };
+  const mostrar = (p) => {
+    document.body.append(p);
+    if (conPopover) p.showPopover();
+  };
+  const panel = (items, etiqueta) => {
+    const p = crear('div', 'cr-menu');
+    p.setAttribute('role', 'menu');
+    p.setAttribute('aria-label', etiqueta);
+    p.tabIndex = -1;
+    if (conPopover) p.popover = 'manual';
+    for (const it of items) {
+      if (it === '-') {
+        const s = crear('div', 'cr-menu-sep');
+        s.setAttribute('role', 'separator');
+        p.append(s);
+        continue;
+      }
+      if (it.titulo) {
+        const t = crear('p', 'cr-menu-t', it.titulo);
+        t.setAttribute('aria-hidden', 'true');
+        p.append(t);
+        continue;
+      }
+      const b = crear('button', `cr-menu-i${it.peligro ? ' cr-menu-peligro' : ''}`);
+      b.type = 'button';
+      b.tabIndex = -1;
+      b.setAttribute('role', it.marcado === undefined ? 'menuitem' : 'menuitemradio');
+      if (it.marcado !== undefined) b.setAttribute('aria-checked', String(it.marcado));
+      if (it.etiqueta) b.setAttribute('aria-label', it.etiqueta);
+      b.append(crear('span', 'cr-menu-txt', it.texto));
+      if (it.atajo) {
+        const k = crear('kbd', '', it.atajo);
+        k.setAttribute('aria-hidden', 'true');
+        b.append(k);
+        b.setAttribute('aria-keyshortcuts', it.teclas);
+      }
+      if (it.sub) {
+        b.setAttribute('aria-haspopup', 'menu');
+        b.setAttribute('aria-expanded', 'false');
+        b.append(flecha());
+      }
+      opcionDe.set(b, it);
+      p.append(b);
+    }
+    p.addEventListener('click', (e) => {
+      const b = e.target.closest('.cr-menu-i');
+      const it = b && opcionDe.get(b);
+      if (!it) return;
+      if (it.sub) {
+        abrirSub(b, true);
+        return;
+      }
+      cerrarMenu(true);
+      it.hacer();
+    });
+    // The pointer moves the focus, like the arrows. Over an option with more, its submenu opens after a moment, so a
+    // slanted way to the submenu doesn't close it on the way.
+    p.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      const b = e.target.closest('.cr-menu-i');
+      clearTimeout(tSub);
+      if (!b || document.activeElement === b) return;
+      b.focus({ preventScroll: true });
+      tSub = setTimeout(() => {
+        if (!menu || !b.isConnected) return;
+        if (opcionDe.get(b).sub) abrirSub(b, false);
+        else cerrarDesde(menu.paneles.indexOf(p) + 1);
+      }, 130);
+    });
+    p.addEventListener('keydown', (e) => {
+      const lista = opciones(p);
+      const i = lista.indexOf(document.activeElement);
+      const nivel = menu.paneles.indexOf(p);
+      const ir = (j) => {
+        e.preventDefault();
+        lista[(j + lista.length) % lista.length]?.focus();
+      };
+      const it = i >= 0 ? opcionDe.get(lista[i]) : null;
+      if (e.key === 'ArrowDown') ir(i + 1);
+      else if (e.key === 'ArrowUp') ir(i < 0 ? -1 : i - 1);
+      else if (e.key === 'Home' || e.key === 'PageUp') ir(0);
+      else if (e.key === 'End' || e.key === 'PageDown') ir(-1);
+      else if (e.key === 'ArrowRight' && it?.sub) {
+        e.preventDefault();
+        abrirSub(lista[i], true);
+      } else if ((e.key === 'ArrowLeft' || e.key === 'Escape') && nivel > 0) {
+        e.preventDefault();
+        const padre = padreDe.get(p);
+        cerrarDesde(nivel);
+        padre.focus();
+      } else if (e.key === 'Escape' || e.key === 'Tab') {
+        e.preventDefault();
+        cerrarMenu(true);
+      } else if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const letra = e.key.toLocaleLowerCase('es');
+        const orden = [...lista.slice(i + 1), ...lista.slice(0, i + 1)];
+        const x = orden.find((b) => b.querySelector('.cr-menu-txt').textContent.toLocaleLowerCase('es').startsWith(letra));
+        if (x) {
+          e.preventDefault();
+          x.focus();
+        }
+      }
+      e.stopPropagation();
+    });
+    p.addEventListener('focusout', (e) => {
+      if (menu && e.relatedTarget && !menu.paneles.some((x) => x.contains(e.relatedTarget))) cerrarMenu(false);
+    });
+    return p;
+  };
+  // { x, y } where it opens, { arriba } the top of what opened it from the keyboard, { desde } a button that opened it.
+  const abrirMenu = (items, o) => {
+    cerrarMenu(false);
+    const volver = guardarFoco(o.desde);
+    const p = panel(items, o.etiqueta);
+    menu = { paneles: [p], volver, desde: o.desde, ac: new AbortController() };
+    mostrar(p);
+    ubicar(p, o);
+    o.desde?.setAttribute('aria-expanded', 'true');
+    // From the keyboard the first option takes the focus; from a pointer the menu does, and an arrow goes in.
+    if (o.teclado) opciones(p)[0]?.focus({ preventScroll: true });
+    else p.focus({ preventScroll: true });
+    const { signal } = menu.ac;
+    document.addEventListener(
+      'pointerdown',
+      (e) => {
+        if (menu && !menu.paneles.some((x) => x.contains(e.target))) cerrarMenu(!campoDe(e.target));
+      },
+      { capture: true, signal },
+    );
+    // A scroll closes it, but not the one the browser makes when the focus opens a part's format bar under it.
+    const abierto = Date.now();
+    addEventListener('scroll', (e) => Date.now() - abierto > 400 && !menu?.paneles.some((x) => x.contains(e.target)) && cerrarMenu(false), { capture: true, passive: true, signal });
+    addEventListener('resize', () => cerrarMenu(false), { signal });
+    addEventListener('blur', () => cerrarMenu(false), { signal });
+  };
+
+  // What the menu does in a field: cut, copy and paste, like the browser's.
+  const campoDe = (t) => {
+    const c = t?.closest?.('textarea, input, [contenteditable="true"]');
+    return c && (c.tagName !== 'INPUT' || /^(text|search|url|email|number|tel)$/.test(c.type)) ? c : null;
+  };
+  const hayElegido = (campo) => {
+    if (!campo) return false;
+    if (!campo.isContentEditable) return campo.selectionStart !== campo.selectionEnd;
+    const sel = getSelection();
+    return sel.rangeCount > 0 && !sel.isCollapsed && campo.contains(sel.getRangeAt(0).commonAncestorContainer);
+  };
+  const portapapeles = (orden) => {
+    let ok = false;
+    try {
+      ok = document.execCommand(orden);
+    } catch {
+      ok = false;
+    }
+    if (!ok) decir(orden === 'cut' ? 'Para cortar, usá Control y X.' : 'Para copiar, usá Control y C.');
+  };
+  const pegar = async (campo) => {
+    let t = '';
+    try {
+      t = await navigator.clipboard.readText();
+    } catch {
+      decir('Para pegar, usá Control y V.');
+      return;
+    }
+    if (!t || !campo.isConnected) return;
+    campo.focus({ preventScroll: true });
+    if (!document.execCommand('insertText', false, t) && 'setRangeText' in campo) {
+      campo.setRangeText(t, campo.selectionStart, campo.selectionEnd, 'end');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+  const menuDeBloque = (sec, campo) => {
+    const b = bloqueDe.get(sec);
+    const a = accionesDe.get(sec);
+    const items = [];
+    const elegido = hayElegido(campo);
+    const ed = campo?.classList.contains('cr-texto') ? campo : null;
+    if (ed && elegido) {
+      const formato = (sel) => () => barraDe.get(ed).querySelector(sel).click();
+      items.push(
+        { texto: 'Negrita', atajo: 'Ctrl+B', teclas: 'Control+B', hacer: formato('[data-f="bold"]') },
+        { texto: 'Cursiva', atajo: 'Ctrl+I', teclas: 'Control+I', hacer: formato('[data-f="italic"]') },
+        { texto: 'Subrayado', atajo: 'Ctrl+U', teclas: 'Control+U', hacer: formato('[data-f="underline"]') },
+        { texto: 'Resaltar', hacer: formato('[data-f="mark"][data-color=""]') },
+        '-',
+      );
+    }
+    if (campo) {
+      if (elegido) items.push({ texto: 'Cortar', atajo: 'Ctrl+X', teclas: 'Control+X', hacer: () => portapapeles('cut') }, { texto: 'Copiar', atajo: 'Ctrl+C', teclas: 'Control+C', hacer: () => portapapeles('copy') });
+      items.push({ texto: 'Pegar', atajo: 'Ctrl+V', teclas: 'Control+V', hacer: () => pegar(campo) }, '-');
+    }
+    const tipos = (antes) => TIPOS.map(([k, t, etiqueta]) => ({ texto: t, etiqueta: `${etiqueta} ${antes ? 'arriba' : 'abajo'}`, hacer: () => sumar(k, { sec, antes }) }));
+    items.push({ texto: 'Sumar arriba', sub: tipos(true) }, { texto: 'Sumar abajo', sub: tipos(false) });
+    if (b.k !== 'o') items.push({ texto: 'Cambiar a', sub: CAMBIOS.map(([k, t]) => ({ texto: t, marcado: k === tipoDe(b), hacer: () => cambiarA(sec, k) })) });
+    items.push({ texto: 'Duplicar', hacer: () => duplicar(sec) });
+    items.push({ texto: 'Espacio antes', sub: ESPACIOS.map((t, i) => ({ texto: t, marcado: espacio(b.e) === i, hacer: () => a.espacio(i) })) });
+    items.push('-');
+    const i = indice(sec);
+    if (i > 0) items.push({ texto: 'Subir', atajo: 'Alt+Shift+↑', teclas: 'Alt+Shift+ArrowUp', hacer: () => a.mover(-1, false) });
+    if (i < doc.bloques.length - 1) items.push({ texto: 'Bajar', atajo: 'Alt+Shift+↓', teclas: 'Alt+Shift+ArrowDown', hacer: () => a.mover(1, false) });
+    items.push({ texto: b.m ? 'Editar el comentario' : 'Escribir al margen', hacer: a.margen }, '-');
+    if (pasos.length) items.push({ texto: 'Deshacer', atajo: 'Ctrl+Z', teclas: 'Control+Z', hacer: deshacer });
+    items.push({ texto: 'Sacar', etiqueta: `Sacar ${nombreDe(b)}`, peligro: true, hacer: a.sacar });
+    return items;
+  };
+  const menuDeHoja = () => [
+    { titulo: 'Sumar al final' },
+    ...TIPOS.map(([k, t, etiqueta]) => ({ texto: t, etiqueta: `${etiqueta} al final`, hacer: () => sumar(k, { fin: true }) })),
+    ...(pasos.length ? ['-', { texto: 'Deshacer', atajo: 'Ctrl+Z', teclas: 'Control+Z', hacer: deshacer }] : []),
+  ];
+  const abrirEn = (destino, o) => {
+    const sec = destino.closest('.cr-bloque');
+    if (sec && hoja.contains(sec)) {
+      marcarActiva(sec);
+      abrirMenu(menuDeBloque(sec, campoDe(destino)), { ...o, etiqueta: `Opciones ${delDe(nombreDe(bloqueDe.get(sec)))}` });
+    } else abrirMenu(menuDeHoja(), { ...o, etiqueta: 'Opciones de la hoja' });
+  };
+  let teclaMenu = 0;
+  let largoMenu = 0;
+  let ultimoToque = 0;
+  let toque = null;
+  const cancelarToque = () => {
+    if (toque) clearTimeout(toque.t);
+    toque = null;
+  };
+  mesa.addEventListener('contextmenu', (e) => {
+    if (e.shiftKey || document.querySelector('dialog[open]')) return;
+    const ahora = Date.now();
+    // The one the Menu key, Shift+F10 or a long press already opened. A right button (2) is always new.
+    if (e.button !== 2 && (ahora - teclaMenu < 800 || ahora - largoMenu < 1000)) {
+      e.preventDefault();
+      return;
+    }
+    // On a phone, a long press in a field keeps the system's own: it selects and pastes.
+    if ((e.pointerType === 'touch' || ahora - ultimoToque < 1500) && campoDe(e.target)) return;
+    cancelarToque();
+    e.preventDefault();
+    abrirEn(e.target, { x: e.clientX + 2, y: e.clientY + 2 });
+  });
+  mesa.addEventListener('keydown', (e) => {
+    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+      e.preventDefault();
+      teclaMenu = Date.now();
+      const el = mesa.contains(document.activeElement) ? document.activeElement : e.target;
+      let r = el.getBoundingClientRect();
+      const sel = getSelection();
+      if (el.isContentEditable && sel.rangeCount) {
+        const c = sel.getRangeAt(0).getBoundingClientRect();
+        if (c.width || c.height) r = c;
+      }
+      abrirEn(el, { x: r.left, y: r.bottom + 4, arriba: r.top - 4, teclado: true });
+    } else if (e.altKey && e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      const sec = e.target.closest('.cr-bloque');
+      if (!sec || !hoja.contains(sec)) return;
+      e.preventDefault();
+      accionesDe.get(sec).mover(e.key === 'ArrowUp' ? -1 : 1, false);
     }
   });
+  // A long press for the phones that don't send «contextmenu» (iPhone). Not in fields, buttons nor graphs.
+  mesa.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (e.pointerType !== 'touch') return;
+      ultimoToque = Date.now();
+      cancelarToque();
+      const t = e.target;
+      if (campoDe(t) || t.closest('button, select, a, .ag-w')) return;
+      const x = e.clientX;
+      const y = e.clientY;
+      toque = {
+        x,
+        y,
+        t: setTimeout(() => {
+          toque = null;
+          largoMenu = Date.now();
+          abrirEn(t, { x, y: y + 12 });
+        }, 550),
+      };
+    },
+    { passive: true },
+  );
+  mesa.addEventListener(
+    'pointermove',
+    (e) => {
+      if (toque && Math.hypot(e.clientX - toque.x, e.clientY - toque.y) > 10) cancelarToque();
+    },
+    { passive: true },
+  );
+  for (const tipo of ['pointerup', 'pointercancel']) mesa.addEventListener(tipo, cancelarToque);
   // A simulator tells what the person typed in it (w.js checks it is a flat object of texts), and it is kept with the
   // piece, so it comes back the same. What does not fit is not kept, and the person is told.
   const NO_ENTRA = 'Esos datos son demasiados para guardarlos. Si recargás la página, vuelven los de antes. Probá con menos.';
@@ -1138,11 +1697,12 @@ ${materia ? `<p class="materia">${esc(materia)}. Armado en El Santo Resumen.</p>
     });
   });
   $('crBorrar').addEventListener('click', () =>
-    preguntar('Se borra todo lo que armaste en este resumen. No se puede deshacer.', 'Sí, borrarlo', () => {
+    preguntar('Se borra todo lo que armaste en este resumen.', 'Sí, borrarlo', () => {
+      recordar();
       doc = nuevo();
       guardarYa();
       pintar();
-      decir('Quedó en blanco.');
+      decir('Quedó en blanco.', false, true);
     }),
   );
 
@@ -1271,6 +1831,7 @@ ${materia ? `<p class="materia">${esc(materia)}. Armado en El Santo Resumen.</p>
     const abrir = () => {
       const antes = doc;
       doc = otro;
+      pasos.length = 0;
       if (!guardarYa()) {
         doc = antes;
         guardarYa();

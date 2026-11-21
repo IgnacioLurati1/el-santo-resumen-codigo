@@ -64,17 +64,35 @@
     return l;
   };
   // `fichas` shows the options as tiles: with the letters at each size (true, for the text size) or with a tiny sheet
-  // in each look's colours ('estilo').
+  // drawn with the real option ('paleta', 'hoja' and 'forma'). Each tile carries the other choices in use, so changing
+  // one repaints the others. The style is saved as «forma» and goes on <html> as data-estilo.
+  const ATRIBUTO = { paleta: 'paleta', hoja: 'hoja', forma: 'estilo' };
+  const BASE = { paleta: 'birome', hoja: 'cuadriculada', forma: 'cuaderno' };
   const grupo = (k, titulo, opciones, fichas = false) => {
-    const ops = crear('div', { className: fichas === 'estilo' ? 'acc-fichas acc-estilos' : fichas ? 'acc-fichas' : 'acc-ops' });
-    const actual = A.leer()[k] || '';
+    const muestra = fichas in ATRIBUTO;
+    const ops = crear('div', { className: muestra ? `acc-fichas acc-estilos acc-${fichas}s` : fichas ? 'acc-fichas' : 'acc-ops' });
+    const actual = muestra ? document.documentElement.dataset[ATRIBUTO[k]] || '' : A.leer()[k] || '';
     opciones.forEach(([v, texto, ayuda]) => {
       const r = crear('input', { type: 'radio', name: `acc-${k}`, value: v, checked: v === actual });
-      r.addEventListener('change', () => cambiar(k, v));
+      r.addEventListener('change', () => {
+        cambiar(k, v);
+        if (muestra) {
+          Object.keys(ATRIBUTO).filter((o) => o !== k).forEach((o) => {
+            document.querySelectorAll(`.acc-${o}s .acc-muestra`).forEach((m) => {
+              m.dataset[ATRIBUTO[k]] = v || BASE[k];
+            });
+          });
+        }
+      });
       const l = crear('label', { className: 'acc-op' }, r);
-      if (fichas === 'estilo') {
-        const m = crear('span', { className: 'acc-muestra' }, crear('span', { className: 'acc-muestra-t' }), crear('span', { className: 'acc-muestra-r' }));
-        m.dataset.estilo = v || 'cuaderno';
+      if (muestra) {
+        const raiz = document.documentElement.dataset;
+        const m = crear('span', { className: 'acc-muestra' });
+        Object.keys(ATRIBUTO).forEach((o) => {
+          m.dataset[ATRIBUTO[o]] = (o === k ? v : raiz[ATRIBUTO[o]]) || BASE[o];
+        });
+        if (k === 'paleta') m.append(crear('span', { className: 'acc-muestra-hoja' }, crear('span', { className: 'acc-muestra-t' }, 'Aa'), crear('mark', {}, 'final')));
+        if (k === 'forma') m.append(crear('span', { className: 'acc-forma-tarjeta' }), crear('span', { className: 'acc-forma-fila' }, crear('span', { className: 'acc-forma-campo' }), crear('span', { className: 'acc-forma-boton' })));
         m.setAttribute('aria-hidden', 'true');
         l.append(m);
       } else if (fichas) {
@@ -87,6 +105,50 @@
       ops.append(l);
     });
     return crear('fieldset', { className: 'acc-grupo' }, crear('legend', {}, titulo), ops);
+  };
+  // Day, night or like the device. It lives apart from the other settings (utn:tema), like the button in the bar.
+  const grupoTema = () => {
+    const actual = A.tema();
+    const ops = crear('div', { className: 'acc-ops acc-tema' });
+    [['dia', 'De día'], ['noche', 'De noche'], ['sistema', 'Como la compu']].forEach(([v, texto]) => {
+      const r = crear('input', { type: 'radio', name: 'acc-tema', value: v, checked: v === actual });
+      r.addEventListener('change', () => {
+        try {
+          localStorage.setItem('utn:tema', v);
+        } catch {
+          /* No storage: it applies until the page closes. */
+        }
+        if (v === 'sistema') A.aplicarTema();
+        else if (v === 'noche') document.documentElement.dataset.tema = 'noche';
+        else delete document.documentElement.dataset.tema;
+        window.dispatchEvent(new Event('utn:tema'));
+      });
+      ops.append(crear('label', { className: 'acc-op' }, r, crear('span', {}, texto)));
+    });
+    return crear('fieldset', { className: 'acc-grupo' }, crear('legend', {}, 'Modo'), ops);
+  };
+  // Ready-made colours as round swatches, plus any other with the browser's picker. The first, empty, is the palette's.
+  const tonos = (k, titulo, opciones, ayuda) => {
+    const actual = A.leer()[k] || '';
+    const propio = actual && !opciones.some(([v]) => v === actual);
+    const ops = crear('div', { className: 'acc-tonos' });
+    const otro = crear('input', { type: 'color', id: `acc-${k}-otro`, value: propio ? actual : opciones[1][0] });
+    opciones.forEach(([v, nombre]) => {
+      const r = crear('input', { type: 'radio', name: `acc-${k}`, value: v, checked: v === actual });
+      if (v) r.style.setProperty('--tono', v);
+      r.addEventListener('change', () => cambiar(k, v || undefined));
+      ops.append(crear('label', { className: 'acc-tono' }, r, crear('span', {}, nombre)));
+    });
+    otro.addEventListener('input', () => {
+      ops.querySelectorAll('input').forEach((r) => {
+        r.checked = false;
+      });
+      cambiar(k, otro.value);
+    });
+    const caja = crear('fieldset', { className: 'acc-sub' }, crear('legend', {}, titulo));
+    if (ayuda) caja.append(crear('small', { className: 'acc-ayuda' }, ayuda));
+    caja.append(ops, crear('div', { className: 'acc-color' }, crear('label', { htmlFor: otro.id }, 'Otro color'), otro));
+    return caja;
   };
   // How bright the letters are at night: a native slider of five steps, each said in words. The last one, the look's own
   // ink, is the one that comes, so it is not saved.
@@ -166,22 +228,43 @@
     let espera = 0;
 
     const armar = () => {
-      const estilo = grupo('estilo', 'Estilo', [
-        ['', 'Cuaderno'],
-        ['lisa', 'Hoja lisa'],
-        ['rayada', 'Hoja rayada'],
-        ['sepia', 'Sepia'],
-        ['pizarron', 'Pizarrón'],
-      ], 'estilo');
-      estilo.append(crear('p', { className: 'acc-ayuda' }, 'Cada uno tiene su versión de día y de noche. El pizarrón es blanco de día y verde de noche.'));
       cuerpo.replaceChildren(
-        estilo,
+        grupoTema(),
+        grupo('paleta', 'Tema', [
+          ['', 'Birome'],
+          ['sepia', 'Sepia'],
+          ['pizarron', 'Pizarrón'],
+          ['plano', 'Plano'],
+          ['grafito', 'Grafito'],
+          ['rosa', 'Dark pink'],
+        ], 'paleta'),
+        grupo('forma', 'Estilo', [
+          ['', 'Cuaderno'],
+          ['limpio', 'Limpio'],
+          ['redondo', 'Redondo'],
+          ['brutal', 'Brutal'],
+        ], 'forma'),
+        grupo('hoja', 'Hoja', [
+          ['', 'Cuadriculada'],
+          ['rayada', 'Rayada'],
+          ['punteada', 'Punteada'],
+          ['lisa', 'Lisa'],
+        ], 'hoja'),
+        crear(
+          'fieldset',
+          { className: 'acc-grupo' },
+          crear('legend', {}, 'Tus colores'),
+          tonos('tinta', 'Tinta', [['', 'Del tema'], ['#1f4fd1', 'Azul'], ['#1d7a4a', 'Verde'], ['#9b1d3a', 'Bordó'], ['#6b3fb8', 'Violeta'], ['#00747a', 'Turquesa'], ['#c2410c', 'Naranja']], 'Títulos, enlaces y botones.'),
+          tonos('resaltador', 'Resaltador', [['', 'Del tema'], ['#c8f56a', 'Lima'], ['#8fd8ff', 'Celeste'], ['#ffb3d6', 'Rosa'], ['#ffc27a', 'Naranja'], ['#d4b8ff', 'Lila']]),
+          filaColor('colorTitulos', '--titulo', 'Color de los títulos'),
+          filaColor('colorBordes', '--linea', 'Color de los bordes'),
+        ),
         filaBrillo(),
-        crear('div', { className: 'acc-grupo' }, casilla('contraste', 'Alto contraste', 'Texto y bordes más marcados, sin cuadriculado. Va con el modo día y con el modo noche.')),
-        grupo('daltonismo', 'Colores', [
-          ['', 'Normales'],
-          ['rg', 'Daltonismo rojo y verde', 'Para protanopia y deuteranopia. Bien y mal pasan a azul y naranja.'],
-          ['ay', 'Daltonismo azul y amarillo', 'Para tritanopia. El resaltador pasa a rosa y los enlaces a turquesa.'],
+        crear('div', { className: 'acc-grupo' }, casilla('contraste', 'Alto contraste', 'Letra y bordes más marcados, sin perder tu tema.')),
+        grupo('daltonismo', 'Daltonismo', [
+          ['', 'No'],
+          ['rg', 'Rojo y verde', 'Para protanopia y deuteranopia. Bien y mal pasan a azul y naranja.'],
+          ['ay', 'Azul y amarillo', 'Para tritanopia. El resaltador pasa a rosa y los enlaces a turquesa.'],
         ]),
         grupo('texto', 'Tamaño del texto', [
           ['', 'Normal'],
@@ -189,7 +272,6 @@
           ['150', 'Más grande'],
           ['175', 'Enorme'],
         ], true),
-        crear('fieldset', { className: 'acc-grupo' }, crear('legend', {}, 'Títulos y bordes'), filaColor('colorTitulos', '--titulo', 'Color de los títulos'), filaColor('colorBordes', '--linea', 'Color de los bordes')),
         crear(
           'div',
           { className: 'acc-grupo' },
@@ -221,7 +303,7 @@
       espera = setTimeout(listo, 400);
     };
 
-    const titulo = crear('h2', { className: 'mn-marca', id: 'accTitulo' }, 'Accesibilidad');
+    const titulo = crear('h2', { className: 'mn-marca', id: 'accTitulo' }, 'Configuración');
     const equis = crear('button', { type: 'button', className: 'b-tema mn-cerrar' });
     equis.setAttribute('aria-label', 'Cerrar');
     equis.innerHTML = '<svg class="b-menu-i" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M13 13l22 22M35 13L13 35"/></svg>';
@@ -240,6 +322,10 @@
     (cuerpo.querySelector('input:checked') || cuerpo.querySelector('input')).autofocus = true;
     panel.append(crear('div', { className: 'mn-cabeza' }, titulo, equis), cuerpo, crear('div', { className: 'acc-pie' }, listoBoton, normal));
     d.append(crear('div', { className: 'mn-fondo' }), panel);
+    // Once something is changed, the page behind stops being darkened, so the change can be judged without closing.
+    cuerpo.addEventListener('change', () => {
+      d.dataset.viendo = '';
+    });
 
     d.addEventListener('cancel', (e) => {
       // Esc: the drawer goes out the same way. If the browser does not let us wait, it closes at once.

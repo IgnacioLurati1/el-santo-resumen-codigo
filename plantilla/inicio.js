@@ -1,27 +1,6 @@
-// Home page: the theme button, the emergency card goes to the map after turning the protocol on, and the 3D notebook
+// Home page: the emergency card goes to the map after turning the protocol on, and the 3D notebook
 // loads when there is time.
 const escena = document.getElementById('inEscena');
-
-// Night and day, as on the other pages (secciones.js): tema.js already applied the saved choice before painting.
-const bTema = document.getElementById('tema');
-if (bTema) {
-  const raiz = document.documentElement;
-  const pintarTema = () => {
-    bTema.textContent = raiz.dataset.tema === 'noche' ? 'Modo día' : 'Modo noche';
-  };
-  bTema.addEventListener('click', () => {
-    const noche = raiz.dataset.tema === 'noche';
-    if (noche) delete raiz.dataset.tema;
-    else raiz.dataset.tema = 'noche';
-    try {
-      localStorage.setItem('utn:tema', noche ? 'dia' : 'noche');
-    } catch {
-      /* No storage: the choice lasts until the page closes. */
-    }
-    pintarTema();
-  });
-  pintarTema();
-}
 
 document.addEventListener('click', (e) => {
   const b = e.target.closest?.('[data-in-ir]');

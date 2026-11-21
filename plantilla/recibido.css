@@ -128,8 +128,8 @@ html:has(dialog.rc[open]) { overflow: hidden; scrollbar-gutter: stable; }
   }
   [data-tema='noche'] .rc::backdrop { background: rgb(1 5 16 / 86%); }
   [data-tema='noche'] .rc-papel { box-shadow: inset 0 0 0 1px var(--borde-hoja); }
-  [data-estilo='sepia'] .rc { --rc-sello: #7a2f6e; }
-  [data-tema='noche'][data-estilo='sepia'] .rc { --rc-sello: #f0b6dd; }
+  [data-paleta='sepia'] .rc { --rc-sello: #7a2f6e; }
+  [data-tema='noche'][data-paleta='sepia'] .rc { --rc-sello: #f0b6dd; }
   [data-contraste] .rc { --rc-papel: var(--lapiz); --rc-sello: var(--tinta); --rc-mezcla: normal; }
   [data-contraste] .rc-papel { background-image: none; box-shadow: inset 0 0 0 2px var(--tinta); }
   [data-contraste] .rc-texto { color: var(--tinta); }

@@ -1,147 +1,282 @@
-/* Study pages: a cool graph paper notebook, blue pen ink and real highlighter marks.
-   Yellow always means "this was asked in exams"; pink always means "this is a trap". */
+/* Study pages: a notebook in blue pen ink with real highlighter marks.
+   Yellow always means "this was asked in exams"; pink always means "this is a trap".
+
+   Two choices in Ajustes make the look. The palette (data-paleta) gives the colours, the letter of the titles and how a
+   highlight looks. The sheet (data-hoja) gives the paper's pattern. Each palette has a day and a night, and each one
+   gives its ink and its edges raw, as --p-*: «Final colours» below turns them into the ones in use, so high contrast and
+   the night brightness work on top of any palette without replacing it. The same selectors also match an element with
+   its own data-paleta or data-hoja, so the tiles in Ajustes show each option for real. */
 :root {
-  --papel: #f8fafd;
-  --cuadro: #e4ebf6;
-  --tinta: #1d2438;
-  --tinta-suave: #515a75;
-  --birome: #1f3a9e;
-  --titulo: var(--birome);
-  --linea: var(--birome);
+  --sans: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --mano: 'Shantell Sans', 'Segoe Print', 'Comic Sans MS', cursive;
+  --mono: 'IBM Plex Mono', Consolas, monospace;
+  --paso: 22px;
+  color-scheme: light;
+}
+:root, [data-paleta='birome'] {
+  --papel: #f3f6fb;
+  --cuadro: #dce4f1;
+  --lapiz: #ffffff;
+  --hoja: var(--lapiz);
+  --p-tinta: #1d2438;
+  --p-suave: #4a5370;
+  --p-birome: #1f3a9e;
+  --p-borde: #b4c2d9;
+  --p-borde-hoja: #aebdd6;
+  --p-borde-control: #66779e;
   --resaltador: #fff06a;
   --resaltador-borde: #e8cf00;
   --rosa: #ffc2da;
   --rosa-borde: #e0578f;
-  --bien: #1a7f4e;
+  --bien: #146a40;
   --mal: #bf2a5e;
-  --borde: #cfd9ea;
-  --borde-control: #7886a8;
-  --lapiz: #ffffff;
   --sobre-resaltador: #1d2438;
   --mark-fondo: var(--resaltador);
   --mark-tinta: currentcolor;
   --tomado-fondo: color-mix(in srgb, var(--resaltador) 22%, var(--lapiz));
   --ojo-fondo: color-mix(in srgb, var(--rosa) 40%, var(--lapiz));
   /* Cards are a sheet resting on the notebook: solid, with a soft shadow, so the grid never shows through. */
-  --hoja: var(--lapiz);
-  --borde-hoja: var(--borde);
-  --sombra-hoja: 0 1px 2px rgb(29 36 56 / 10%), 0 10px 24px -14px rgb(29 36 56 / 35%);
+  --sombra-hoja: 0 1px 2px rgb(29 36 56 / 12%), 0 10px 24px -14px rgb(29 36 56 / 38%);
   --sombra-recuadro: 0 1px 2px rgb(29 36 56 / 10%);
-  --sombra-papel: 0 1px 2px rgb(29 36 56 / 8%), 0 12px 32px -18px rgb(29 36 56 / 28%);
-  --sans: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
-  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-  --mano: 'Shantell Sans', 'Segoe Print', 'Comic Sans MS', cursive;
-  --mono: 'IBM Plex Mono', Consolas, monospace;
-  color-scheme: light;
+  --sombra-papel: 0 0 0 1px rgb(29 36 56 / 7%), 0 1px 2px rgb(29 36 56 / 10%), 0 12px 32px -18px rgb(29 36 56 / 32%);
+  /* What makes each palette its own, besides the colours. */
+  --f-titulo: var(--sans);
+  --w-h1: 800;
+  --w-h2: 750;
+  --ls-titulo: -.025em;
+  --mark-forma: linear-gradient(100deg, transparent .4%, var(--mark-fondo) 1.4%, var(--mark-fondo) 98.6%, transparent 99.6%);
+  --mark-color: var(--mark-tinta);
+  --mark-linea: none;
+  --mark-radio: .25em .1em .3em .12em;
+  --radio-hoja: 2px;
+  --radio-tarjeta: 5px;
+  --brillo: none;
+}
+/* The sheets. The night grid is twice as wide, so it stays quiet on the dark paper. */
+:root, [data-hoja='cuadriculada'] {
+  --patron: linear-gradient(var(--cuadro) 1px, transparent 1px), linear-gradient(90deg, var(--cuadro) 1px, transparent 1px);
+  --patron-tam: var(--paso) var(--paso), var(--paso) var(--paso);
+}
+[data-hoja='rayada'] { --patron: linear-gradient(transparent calc(100% - 1px), var(--cuadro) calc(100% - 1px)), none; --patron-tam: 100% 1.75rem, auto; }
+[data-hoja='punteada'] { --patron: radial-gradient(circle, var(--p-borde) 1.1px, transparent 1.6px), none; --patron-tam: var(--paso) var(--paso), auto; }
+[data-hoja='lisa'] { --patron: none, none; --patron-tam: auto, auto; }
+
+/* Final colours: the ones every rule uses. */
+:root, [data-paleta] {
+  --tinta: var(--p-tinta);
+  --tinta-suave: var(--p-suave);
+  --birome: var(--p-birome);
+  --borde: var(--p-borde);
+  --borde-hoja: var(--p-borde-hoja);
+  --borde-control: var(--p-borde-control);
+  --titulo: var(--birome);
+  --linea: var(--birome);
 }
 @media screen {
-  [data-tema='noche'] {
+  [data-tema='noche'], [data-tema='noche'] [data-paleta='birome'] {
+    --paso: 44px;
     --papel: #06122b;
-    --cuadro: #101f40;
-    --tinta-n: #ffffff;
-    --tinta-suave-n: #e6e6e6;
-    --birome-n: #ffffff;
+    --cuadro: #13244a;
+    --lapiz: #0b1b3d;
+    --hoja: #12285a;
+    --p-tinta: #ffffff;
+    --p-suave: #e6e6e6;
+    --p-birome: #ffffff;
+    --p-borde: #36507f;
+    --p-borde-hoja: #4d6ca3;
+    --p-borde-control: #8fa8d6;
     --resaltador: #ffe45c;
     --resaltador-borde: #ffe45c;
     --rosa: #ffb3cc;
     --rosa-borde: #ffb3cc;
     --bien: #93f0b6;
     --mal: #ffbdd2;
-    --borde: #2b416b;
-    --borde-control: #8fa8d6;
-    --lapiz: #0a1937;
-    --sombra-papel: 0 0 0 1px #182b52;
     --sobre-resaltador: #06122b;
     --mark-fondo: #ffe45c;
     --mark-tinta: #06122b;
-    --hoja: #0f2149;
-    --borde-hoja: #3a5689;
     --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 70%);
     --sombra-recuadro: none;
+    --sombra-papel: 0 0 0 1px #1c3160;
     --tomado-fondo: color-mix(in srgb, var(--resaltador) 8%, var(--hoja));
     --ojo-fondo: color-mix(in srgb, var(--rosa) 8%, var(--hoja));
+    --d-caja: #182b52;
     color-scheme: dark;
   }
-  [data-tema='noche'] body { background-size: 44px 44px; }
   [data-tema='noche'] .tomado, [data-tema='noche'] .ojo { border-left-width: 4px; }
-  [data-tema='noche'] .d-caja-r { fill: #182b52; }
+  [data-tema='noche'] .d-caja-r { fill: var(--d-caja); }
   [data-tema='noche'] .sol-img { background: transparent; border-color: var(--borde); }
   [data-tema='noche'] .sol-img img { filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; }
 
-  /* Ready-made looks (Ajustes, «Estilo»). Each one has a day and a night version, and only touches the paper, the ink
-     and the sheets: colour blindness and high contrast come after and still win, and so do the user's own colours. */
-  [data-estilo='lisa'] { --papel: #f9fafb; --cuadro: #e8ecf2; }
-  [data-tema='noche'][data-estilo='lisa'] { --papel: #06122b; --cuadro: #101f40; }
-  [data-estilo='lisa'] body, [data-estilo='sepia'] body { background-image: none; }
-
-  [data-estilo='rayada'] { --papel: #fdfdf7; --cuadro: #d3e2f3; }
-  [data-tema='noche'][data-estilo='rayada'] { --papel: #0a1428; --cuadro: #1b2b4a; }
-  [data-estilo='rayada'] body { background-image: linear-gradient(transparent calc(100% - 1px), var(--cuadro) calc(100% - 1px)); background-size: 100% 1.75rem; }
-
-  [data-estilo='sepia'] {
-    --papel: #f3ead8; --cuadro: #e7dbc2; --tinta: #3b2f23; --tinta-suave: #67563f; --birome: #7c3d10;
-    --lapiz: #fbf6ea; --hoja: #fbf6ea; --borde: #dccbaa; --borde-hoja: #d6c4a2; --borde-control: #8c7756;
-    --sobre-resaltador: #3b2f23;
-    --sombra-hoja: 0 1px 2px rgb(59 47 35 / 12%), 0 10px 24px -14px rgb(59 47 35 / 35%);
-    --sombra-papel: 0 1px 2px rgb(59 47 35 / 10%), 0 12px 32px -18px rgb(59 47 35 / 30%);
+  /* Sepia: an old book. Warm paper, brown ink, serif titles and a softer highlighter. */
+  [data-paleta='sepia'] {
+    --papel: #efe4cf; --cuadro: #e2d3b6; --lapiz: #fbf6ea; --hoja: #fbf6ea;
+    --p-tinta: #3b2f23; --p-suave: #5f4e38; --p-birome: #7c3d10;
+    --p-borde: #cdb791; --p-borde-hoja: #c4ad86; --p-borde-control: #8c7756;
+    --resaltador: #f9dc6b; --resaltador-borde: #d9b23a; --sobre-resaltador: #3b2f23;
+    --sombra-hoja: 0 1px 2px rgb(59 47 35 / 12%), 0 10px 24px -14px rgb(59 47 35 / 38%);
+    --sombra-papel: 0 0 0 1px rgb(59 47 35 / 8%), 0 1px 2px rgb(59 47 35 / 10%), 0 12px 32px -18px rgb(59 47 35 / 32%);
+    --f-titulo: var(--serif); --w-h1: 600; --w-h2: 600; --ls-titulo: -.012em;
   }
-  [data-tema='noche'][data-estilo='sepia'] {
-    --papel: #1a140e; --cuadro: #2b2218; --tinta-n: #f5ecdc; --tinta-suave-n: #dccdb4; --birome-n: #f2c48d;
-    --lapiz: #211a12; --hoja: #2a2117; --borde: #4d3e2b; --borde-hoja: #625038; --borde-control: #b89f78;
-    --sobre-resaltador: #1a140e; --mark-tinta: #1a140e;
-    --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 70%); --sombra-papel: 0 0 0 1px #3a2e20;
+  [data-tema='noche'][data-paleta='sepia'], [data-tema='noche'] [data-paleta='sepia'] {
+    --papel: #1a140e; --cuadro: #2b2218; --lapiz: #221a12; --hoja: #2c2218;
+    --p-tinta: #f5ecdc; --p-suave: #dccdb4; --p-birome: #f2c48d;
+    --p-borde: #5a4832; --p-borde-hoja: #6e5a40; --p-borde-control: #b89f78;
+    --resaltador: #f5d76e; --resaltador-borde: #f5d76e; --sobre-resaltador: #1a140e; --mark-tinta: #1a140e;
+    --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 70%); --sombra-papel: 0 0 0 1px #3a2e20; --d-caja: #3a2e20;
   }
-  [data-tema='noche'][data-estilo='sepia'] .d-caja-r { fill: #3a2e20; }
 
-  /* Pizarrón: a whiteboard by day and a green chalkboard by night. */
-  [data-estilo='pizarron'] {
-    --papel: #eef1f2; --cuadro: #e1e6e9; --tinta: #15191e; --tinta-suave: #49525b; --birome: #1747b5;
-    --lapiz: #fff; --hoja: #fff; --borde: #d3d9dd; --borde-hoja: #c6cdd2; --borde-control: #6f7a84;
-    --sobre-resaltador: #15191e;
+  /* Pizarrón: a whiteboard by day and a green chalkboard by night. Titles in handwriting, highlights as a thick
+     marker or chalk line under the words. */
+  [data-paleta='pizarron'] {
+    --papel: #e9edef; --cuadro: #d9e0e4; --lapiz: #ffffff; --hoja: #ffffff;
+    --p-tinta: #15191e; --p-suave: #434c55; --p-birome: #1747b5;
+    --p-borde: #bec8cf; --p-borde-hoja: #b3bec6; --p-borde-control: #66727d;
+    --resaltador: #ffd23f; --resaltador-borde: #e0b000; --sobre-resaltador: #15191e;
     --sombra-hoja: 0 1px 2px rgb(21 25 30 / 12%), 0 12px 28px -14px rgb(21 25 30 / 38%);
-    --sombra-papel: 0 1px 2px rgb(21 25 30 / 10%), 0 12px 32px -18px rgb(21 25 30 / 30%);
+    --sombra-papel: 0 0 0 1px rgb(21 25 30 / 7%), 0 1px 2px rgb(21 25 30 / 10%), 0 12px 32px -18px rgb(21 25 30 / 30%);
+    --brillo: radial-gradient(120% 70% at 20% 0%, rgb(255 255 255 / 70%), transparent 70%);
+    --f-titulo: var(--mano); --w-h1: 600; --w-h2: 600; --ls-titulo: 0;
+    --mark-forma: linear-gradient(transparent 78%, var(--mark-fondo) 78%, var(--mark-fondo) 98%, transparent 98%);
+    --mark-color: currentcolor; --mark-radio: 0 0 .3em .3em;
+    --radio-hoja: 12px; --radio-tarjeta: 9px;
   }
-  [data-tema='noche'][data-estilo='pizarron'] {
-    --papel: #173129; --cuadro: #26493e; --tinta-n: #f3f1ea; --tinta-suave-n: #d3ddd5; --birome-n: #fde9a0;
-    --lapiz: #1a362d; --hoja: #1c3a31; --borde: #36594d; --borde-hoja: #4a7365; --borde-control: #a6c7b9;
-    --sobre-resaltador: #173129; --mark-tinta: #173129;
-    --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 60%); --sombra-papel: 0 0 0 1px #2b4c41;
+  [data-tema='noche'][data-paleta='pizarron'], [data-tema='noche'] [data-paleta='pizarron'] {
+    --papel: #173129; --cuadro: #26493e; --lapiz: #1a362d; --hoja: #1f3f35;
+    --p-tinta: #f3f1ea; --p-suave: #d3ddd5; --p-birome: #fde9a0;
+    --p-borde: #3d6255; --p-borde-hoja: #4f7a6b; --p-borde-control: #a6c7b9;
+    --resaltador: #f6dc6a; --resaltador-borde: #f6dc6a; --sobre-resaltador: #173129; --mark-tinta: #173129;
+    --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 60%); --sombra-papel: 0 0 0 1px #2b4c41; --d-caja: #26493e;
+    --brillo: radial-gradient(120% 70% at 30% 10%, rgb(255 255 255 / 5%), transparent 70%);
   }
-  [data-estilo='pizarron'] body { background-image: radial-gradient(120% 70% at 20% 0%, rgb(255 255 255 / 70%), transparent 70%); background-size: auto; }
-  [data-tema='noche'][data-estilo='pizarron'] body { background-image: radial-gradient(120% 70% at 30% 10%, rgb(255 255 255 / 5%), transparent 70%); }
-  [data-tema='noche'][data-estilo='pizarron'] .d-caja-r { fill: #26493e; }
 
-  /* Colour blindness: never colour alone, so highlights also get an underline and warnings a dashed edge. */
-  [data-daltonismo='rg'] { --bien: #0b5cad; --mal: #a84300; --rosa: #ffd2a6; --rosa-borde: #c75b00; }
-  [data-tema='noche'][data-daltonismo='rg'] { --bien: #9ad4ff; --mal: #ffc48a; --rosa: #ffc48a; --rosa-borde: #ffc48a; }
-  [data-daltonismo='ay'] { --birome: #00606e; --bien: #00606e; --mal: #b00030; --resaltador: #ffc2d6; --resaltador-borde: #d6336c; --rosa: #ffe0b0; --rosa-borde: #b85c00; }
-  [data-tema='noche'][data-daltonismo='ay'] { --birome-n: #8ff0ff; --bien: #8ff0ff; --mal: #ffb8b8; --resaltador: #ffb3d0; --resaltador-borde: #ffb3d0; --rosa: #ffcf9e; --rosa-borde: #ffcf9e; --mark-fondo: #ffb3d0; --mark-tinta: #06122b; }
-  /* Night ink. Each night look above gives its ink in --*-n, and here it becomes the one in use, mixed with the paper by
-     the brightness chosen in Ajustes («Brillo de la letra de noche», tema.js). High contrast keeps its own, always. */
-  html[data-tema='noche']:not([data-contraste]) { --tinta: var(--tinta-n); --tinta-suave: var(--tinta-suave-n); --birome: var(--birome-n); }
-  html[data-tema='noche'][data-claridad]:not([data-contraste]) {
-    --tinta: color-mix(in srgb, var(--tinta-n) var(--claridad), var(--papel));
-    --tinta-suave: color-mix(in srgb, var(--tinta-suave-n) var(--claridad), var(--papel));
-    --birome: color-mix(in srgb, var(--birome-n) var(--claridad), var(--papel));
+  /* Plano: tracing paper by day and a blueprint by night. Typewriter titles, square corners and highlights drawn as a
+     dashed box, like a note on a drawing. */
+  [data-paleta='plano'] {
+    --papel: #e6eef5; --cuadro: #cad9e7; --lapiz: #fbfdff; --hoja: #fbfdff;
+    --p-tinta: #0d2a45; --p-suave: #3a5670; --p-birome: #0a5a8c;
+    --p-borde: #a7bdd1; --p-borde-hoja: #9ab2c8; --p-borde-control: #55748f;
+    --resaltador: #ffeb5c; --resaltador-borde: #c9a800; --sobre-resaltador: #0d2a45;
+    --sombra-hoja: 0 1px 0 rgb(13 42 69 / 14%);
+    --sombra-papel: 0 0 0 1px #9ab2c8;
+    --f-titulo: var(--mono); --w-h1: 600; --w-h2: 600; --ls-titulo: -.03em;
+    --mark-forma: linear-gradient(color-mix(in srgb, var(--mark-fondo) 38%, transparent), color-mix(in srgb, var(--mark-fondo) 38%, transparent));
+    --mark-color: currentcolor; --mark-linea: 1.5px dashed var(--resaltador-borde); --mark-radio: 0;
+    --radio-hoja: 0; --radio-tarjeta: 0;
   }
-  /* The softest still leaves the grey text above 4.5:1 on the cards of every look. */
-  [data-claridad='0'] { --claridad: 70%; }
-  [data-claridad='1'] { --claridad: 77.5%; }
-  [data-claridad='2'] { --claridad: 85%; }
-  [data-claridad='3'] { --claridad: 92.5%; }
+  [data-tema='noche'][data-paleta='plano'], [data-tema='noche'] [data-paleta='plano'] {
+    --papel: #0c3866; --cuadro: #1b4b7d; --lapiz: #0f3f72; --hoja: #144a83;
+    --p-tinta: #f4f8fc; --p-suave: #cbdcec; --p-birome: #a8e1ff;
+    --p-borde: #4673a3; --p-borde-hoja: #6390bf; --p-borde-control: #b0cde8;
+    --resaltador: #ffe45c; --resaltador-borde: #ffe45c; --sobre-resaltador: #0c3866; --mark-tinta: #0c3866;
+    --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 55%); --sombra-papel: 0 0 0 1px #5a86b5; --d-caja: #1b4b7d;
+    /* Lighter fill at night, so the white letter keeps 4.5:1 on it. */
+    --mark-forma: linear-gradient(color-mix(in srgb, var(--mark-fondo) 20%, transparent), color-mix(in srgb, var(--mark-fondo) 20%, transparent));
+  }
+
+  /* Grafito: pencil on white. No colour but the highlighter, light titles and flat highlights. */
+  [data-paleta='grafito'] {
+    --papel: #eeeeec; --cuadro: #dededa; --lapiz: #ffffff; --hoja: #ffffff;
+    --p-tinta: #1e1e1e; --p-suave: #4a4a47; --p-birome: #2d2d2d;
+    --p-borde: #c2c2bd; --p-borde-hoja: #b5b5b0; --p-borde-control: #6f6f6a;
+    --resaltador: #fff06a; --resaltador-borde: #e8cf00; --sobre-resaltador: #1e1e1e;
+    --sombra-hoja: 0 1px 2px rgb(0 0 0 / 10%), 0 10px 24px -14px rgb(0 0 0 / 30%);
+    --sombra-papel: 0 0 0 1px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 8%), 0 12px 32px -18px rgb(0 0 0 / 25%);
+    --f-titulo: var(--sans); --w-h1: 600; --w-h2: 600; --ls-titulo: -.035em;
+    --mark-forma: linear-gradient(var(--mark-fondo), var(--mark-fondo)); --mark-radio: 0;
+    --radio-hoja: 0; --radio-tarjeta: 2px;
+  }
+  [data-tema='noche'][data-paleta='grafito'], [data-tema='noche'] [data-paleta='grafito'] {
+    --papel: #151515; --cuadro: #242424; --lapiz: #1b1b1b; --hoja: #242424;
+    --p-tinta: #ededeb; --p-suave: #c4c4bf; --p-birome: #ffffff;
+    --p-borde: #3f3f3d; --p-borde-hoja: #50504d; --p-borde-control: #9b9b96;
+    --resaltador: #ffe45c; --resaltador-borde: #ffe45c; --sobre-resaltador: #151515; --mark-tinta: #151515;
+    --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 70%); --sombra-papel: 0 0 0 1px #2c2c2a; --d-caja: #2c2c2a;
+  }
+
+  /* Rosa: dark pink, after the editor themes of that name. Plum paper, hot pink ink, rounded cards and a pill
+     highlighter. Traps go coral here, so they never blend with the ink. */
+  [data-paleta='rosa'] {
+    --papel: #fbf0f5; --cuadro: #f1dbe6; --lapiz: #ffffff; --hoja: #ffffff;
+    --p-tinta: #2b1626; --p-suave: #5e3d55; --p-birome: #b0186e;
+    --p-borde: #e0bfd1; --p-borde-hoja: #d8b3c7; --p-borde-control: #94607f;
+    --resaltador: #fff06a; --resaltador-borde: #e0c200; --sobre-resaltador: #2b1626;
+    --rosa: #ffc9b3; --rosa-borde: #d9542b; --mal: #a3204f;
+    --sombra-hoja: 0 1px 2px rgb(43 22 38 / 12%), 0 10px 24px -14px rgb(176 24 110 / 30%);
+    --sombra-papel: 0 0 0 1px rgb(43 22 38 / 7%), 0 1px 2px rgb(43 22 38 / 10%), 0 12px 32px -18px rgb(176 24 110 / 28%);
+    --f-titulo: var(--sans); --w-h1: 800; --w-h2: 700; --ls-titulo: -.03em;
+    --mark-forma: linear-gradient(var(--mark-fondo), var(--mark-fondo)); --mark-radio: .45em;
+    --radio-hoja: 14px; --radio-tarjeta: 10px;
+  }
+  [data-tema='noche'][data-paleta='rosa'], [data-tema='noche'] [data-paleta='rosa'] {
+    --papel: #1d1520; --cuadro: #2c1f31; --lapiz: #241a28; --hoja: #2e2133;
+    --p-tinta: #fbeef5; --p-suave: #e0c7d6; --p-birome: #ff7ac6;
+    --p-borde: #553a53; --p-borde-hoja: #6e4a69; --p-borde-control: #c592b7;
+    --resaltador: #ffe45c; --resaltador-borde: #ffe45c; --sobre-resaltador: #1d1520; --mark-tinta: #1d1520;
+    --rosa: #ffb38f; --rosa-borde: #ffb38f; --mal: #ffb38f;
+    --sombra-hoja: 0 10px 24px -12px rgb(0 0 0 / 70%); --sombra-papel: 0 0 0 1px #3a2940; --d-caja: #3a2940;
+    --brillo: radial-gradient(90% 60% at 85% 0%, rgb(255 122 198 / 12%), transparent 70%);
+  }
+
+  /* Colour blindness: never colour alone, so highlights also get an underline and warnings a dashed edge. With html in
+     front, so it wins over every palette. */
+  html[data-daltonismo='rg'] { --bien: #0b5cad; --mal: #a84300; --rosa: #ffd2a6; --rosa-borde: #c75b00; }
+  html[data-tema='noche'][data-daltonismo='rg'] { --bien: #9ad4ff; --mal: #ffc48a; --rosa: #ffc48a; --rosa-borde: #ffc48a; }
+  html[data-daltonismo='ay'] { --p-birome: #00606e; --bien: #00606e; --mal: #b00030; --resaltador: #ffc2d6; --resaltador-borde: #d6336c; --rosa: #ffe0b0; --rosa-borde: #b85c00; }
+  html[data-tema='noche'][data-daltonismo='ay'] { --p-birome: #8ff0ff; --bien: #8ff0ff; --mal: #ffb8b8; --resaltador: #ffb3d0; --resaltador-borde: #ffb3d0; --rosa: #ffcf9e; --rosa-borde: #ffcf9e; --mark-fondo: #ffb3d0; }
   [data-daltonismo] mark { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .18em; }
   [data-daltonismo] .ojo { border-left-style: dashed; }
   [data-daltonismo] .editado { text-decoration: underline dotted; text-underline-offset: .18em; }
 
-  /* High contrast works with day and with night. */
-  [data-contraste] { --papel: #fff; --cuadro: #e6e6e6; --tinta: #000; --tinta-suave: #1a1a1a; --birome: #00218f; --resaltador: #ffe600; --resaltador-borde: #000; --rosa: #ffd0e0; --rosa-borde: #000; --bien: #00551f; --mal: #8a0033; --borde: #444; --borde-control: #000; --lapiz: #fff; --sombra-papel: none; --sobre-resaltador: #000; --mark-fondo: #ffe600; --mark-tinta: #000; --tomado-fondo: transparent; --ojo-fondo: transparent; }
+  /* The student's own ink and highlighter (Ajustes, «Tus colores»). tema.js already made the ink readable on every
+     palette, one version for day and one for night, and chose the letter that goes on the highlighter. */
+  html[data-tinta] { --p-birome: var(--u-tinta-d); }
+  html[data-tema='noche'][data-tinta] { --p-birome: var(--u-tinta-n); }
+  html[data-resaltador] {
+    --resaltador: var(--u-res); --resaltador-borde: color-mix(in oklab, var(--u-res) 72%, #000);
+    --mark-fondo: var(--u-res); --mark-tinta: var(--u-res-letra); --sobre-resaltador: var(--u-res-letra);
+  }
+  html[data-tema='noche'][data-resaltador] { --resaltador-borde: var(--u-res); --mark-fondo: var(--u-res); }
+
+  /* Night ink, mixed with the paper by the brightness chosen in Ajustes («Brillo de la letra de noche», tema.js).
+     The softest still leaves the grey text above 4.5:1 on the cards of every palette. High contrast keeps its own. */
+  html[data-tema='noche'][data-claridad]:not([data-contraste]), html[data-tema='noche'][data-claridad]:not([data-contraste]) [data-paleta] {
+    --tinta: color-mix(in srgb, var(--p-tinta) var(--claridad), var(--papel));
+    --tinta-suave: color-mix(in srgb, var(--p-suave) var(--claridad), var(--papel));
+    --birome: color-mix(in srgb, var(--p-birome) var(--claridad), var(--papel));
+  }
+  [data-claridad='0'] { --claridad: 70%; }
+  [data-claridad='1'] { --claridad: 77.5%; }
+  [data-claridad='2'] { --claridad: 85%; }
+  [data-claridad='3'] { --claridad: 92.5%; }
+
+  /* High contrast works on top of the palette and the sheet: same paper, ink and edges pushed to black by day and to
+     white by night. */
+  [data-contraste], [data-contraste] [data-paleta] {
+    --tinta: color-mix(in oklab, var(--p-tinta) 30%, #000);
+    --tinta-suave: color-mix(in oklab, var(--p-suave) 45%, #000);
+    --birome: color-mix(in oklab, var(--p-birome) 70%, #000);
+    --borde: color-mix(in oklab, var(--p-borde-control) 65%, #000);
+    --borde-hoja: color-mix(in oklab, var(--p-borde-control) 65%, #000);
+    --borde-control: color-mix(in oklab, var(--p-borde-control) 30%, #000);
+    --hoja: var(--lapiz);
+    --resaltador-borde: #000; --rosa-borde: #000; --bien: #00551f; --mal: #8a0033;
+    --tomado-fondo: transparent; --ojo-fondo: transparent;
+    --sombra-hoja: none; --sombra-recuadro: none; --sombra-papel: 0 0 0 1.5px var(--borde-hoja);
+  }
+  [data-tema='noche'][data-contraste], [data-tema='noche'][data-contraste] [data-paleta] {
+    --tinta: color-mix(in oklab, var(--p-tinta) 15%, #fff);
+    --tinta-suave: color-mix(in oklab, var(--p-suave) 40%, #fff);
+    --birome: color-mix(in oklab, var(--p-birome) 70%, #fff);
+    --borde: color-mix(in oklab, var(--p-borde-control) 70%, #fff);
+    --borde-hoja: color-mix(in oklab, var(--p-borde-control) 70%, #fff);
+    --borde-control: color-mix(in oklab, var(--p-borde-control) 30%, #fff);
+    --resaltador-borde: var(--resaltador); --rosa-borde: #ff9ec7; --bien: #7dff9e; --mal: #ffb0d0;
+  }
   [data-contraste][data-daltonismo='rg'] { --bien: #003f88; --mal: #8a3a00; }
-  [data-contraste][data-daltonismo='ay'] { --birome: #004650; --bien: #004650; --mal: #8a0026; --resaltador: #ffc2d6; --mark-fondo: #ffc2d6; }
-  [data-tema='noche'][data-contraste] { --papel: #000; --cuadro: #2a2a2a; --tinta: #fff; --tinta-suave: #ededed; --birome: #7fdfff; --resaltador: #ffe600; --resaltador-borde: #ffe600; --rosa: #ff9ec7; --rosa-borde: #ff9ec7; --bien: #7dff9e; --mal: #ffb0d0; --borde: #9a9a9a; --borde-control: #fff; --lapiz: #000; --sombra-papel: none; --sobre-resaltador: #000; --mark-fondo: #ffe600; --mark-tinta: #000; --tomado-fondo: transparent; --ojo-fondo: transparent; }
+  [data-contraste][data-daltonismo='ay'] { --birome: #004650; --bien: #004650; --mal: #8a0026; }
   [data-tema='noche'][data-contraste][data-daltonismo='rg'] { --bien: #8fd0ff; --mal: #ffb866; --rosa-borde: #ffb866; }
-  [data-tema='noche'][data-contraste][data-daltonismo='ay'] { --birome: #7fdfff; --bien: #7fdfff; --mal: #ffb0b0; --resaltador: #ffb3d0; --resaltador-borde: #ffb3d0; --mark-fondo: #ffb3d0; }
-  [data-contraste] body { background-image: none; }
-  [data-contraste], [data-tema='noche'][data-contraste] { --hoja: var(--lapiz); --borde-hoja: var(--borde); --sombra-hoja: none; --sombra-recuadro: none; }
+  [data-tema='noche'][data-contraste][data-daltonismo='ay'] { --birome: #7fdfff; --bien: #7fdfff; --mal: #ffb0b0; --resaltador-borde: #ffb3d0; --mark-fondo: #ffb3d0; }
   [data-contraste] .tomado, [data-contraste] .ojo { border-left-width: 6px; }
   [data-contraste] .ojo { border-left-style: dashed; }
   [data-contraste] :focus-visible { outline-width: 3.5px; outline-offset: 3px; }
@@ -182,12 +317,11 @@ body {
   color: var(--tinta);
   font: 400 1.075rem/1.65 var(--serif);
   background-color: var(--papel);
-  background-image:
-    linear-gradient(var(--cuadro) 1px, transparent 1px),
-    linear-gradient(90deg, var(--cuadro) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-image: var(--brillo), var(--patron);
+  background-size: auto, var(--patron-tam);
 }
 [hidden] { display: none !important; }
+::placeholder { color: var(--tinta-suave); opacity: 1; }
 a { color: var(--birome); text-underline-offset: .15em; }
 :focus-visible { outline: 2.5px solid var(--linea); outline-offset: 2px; border-radius: 3px; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -224,7 +358,8 @@ a { color: var(--birome); text-underline-offset: .15em; }
   font-family: var(--sans);
 }
 .b-materia { font-weight: 700; font-size: 1.08rem; color: var(--titulo); text-decoration: none; margin-right: auto; }
-.b-buscar { position: relative; flex: 0 1 19rem; min-width: 10rem; }
+/* Small basis and room to grow: the bar wraps only when the search is already at its narrowest. */
+.b-buscar { position: relative; flex: 1 1 10rem; max-width: 19rem; min-width: 10rem; }
 #buscar {
   width: 100%; padding: .42rem .7rem; font: inherit; font-size: .95rem; color: var(--tinta);
   background: var(--papel); border: 1px solid var(--borde-control); border-radius: 6px;
@@ -272,6 +407,7 @@ html:has(dialog.menu[open]) { overflow: hidden; scrollbar-gutter: stable; }
 }
 .menu[data-fuera] .mn-panel { transform: translateX(-100%); }
 .menu[data-fuera] .mn-fondo { opacity: 0; }
+.acc[data-viendo] .mn-fondo { opacity: 0; }
 .menu[data-saliendo] .mn-panel, .menu[data-saliendo] .mn-fondo { transition-duration: .17s; }
 .mn-cabeza { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin: 0 0 .45rem; padding: 0 0 .55rem .55rem; border-bottom: 1.5px solid var(--linea); }
 .mn-marca { margin: 0; font: 800 1.2rem/1.1 var(--sans); letter-spacing: -.02em; color: var(--titulo); }
@@ -331,6 +467,26 @@ html:has(dialog.menu[open]) { overflow: hidden; scrollbar-gutter: stable; }
 .toc .n3 a { padding-left: 1.35rem; font-size: .84rem; }
 .toc a:hover { color: var(--birome); }
 .toc a[aria-current='true'] { color: var(--birome); font-weight: 650; }
+/* A box to mark each entry done (indice.js). The room is there from the start, so the entries do not move when the
+   boxes arrive. The box is 1.5rem to tap and draws a smaller one inside, with the same tick as Configuración. */
+.toc[data-marcas] li { position: relative; }
+.toc[data-marcas] a { margin-left: 1.75rem; padding-left: .35rem; }
+.toc[data-marcas] .n3 a { margin-left: 2.5rem; padding-left: .35rem; }
+.toc-hecho { appearance: none; position: absolute; left: .25rem; top: .05rem; width: 1.5rem; height: 1.5rem; margin: 0; padding: 0; background: none; border: 0; border-radius: 4px; cursor: pointer; }
+.n3 > .toc-hecho { left: 1rem; }
+.toc-hecho::before { content: ''; position: absolute; inset: .28rem; background: var(--lapiz); border: 1.5px solid var(--borde-control); border-radius: 3px; transition: transform .12s ease, border-color .12s ease; }
+.toc-hecho::after { content: ''; position: absolute; inset: .22rem; background: var(--birome); -webkit-mask: var(--tilde) center / contain no-repeat; mask: var(--tilde) center / contain no-repeat; opacity: 0; transform: scale(.5); transition: transform .16s cubic-bezier(.23, 1, .32, 1), opacity .1s ease; }
+.toc-hecho:checked::before { border-color: var(--birome); }
+.toc-hecho:checked::after { opacity: 1; transform: none; }
+.toc-hecho:active::before { transform: scale(.9); }
+.toc-hecho:focus-visible { outline: 2.5px solid var(--linea); outline-offset: 0; }
+@media (hover: hover) and (pointer: fine) { .toc-hecho:hover::before { border-color: var(--birome); } }
+.toc li[data-hecho] > a { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: color-mix(in srgb, currentcolor 60%, transparent); }
+@media (forced-colors: active) {
+  .toc-hecho { appearance: auto; width: 1rem; height: 1rem; left: .5rem; top: .3rem; }
+  .n3 > .toc-hecho { left: 1.25rem; }
+  .toc-hecho::before, .toc-hecho::after { content: none; }
+}
 
 /* The sheet of paper. The right margin holds the handwritten exam notes. */
 .hoja {
@@ -339,12 +495,12 @@ html:has(dialog.menu[open]) { overflow: hidden; scrollbar-gutter: stable; }
   background: var(--lapiz);
   box-shadow: var(--sombra-papel);
   padding: clamp(1.2rem, 3.5vw, 2.75rem) calc(var(--margen) + clamp(1.1rem, 3.5vw, 2.75rem)) 3rem clamp(1.1rem, 3.5vw, 2.75rem);
-  border-radius: 2px;
+  border-radius: var(--radio-hoja);
 }
 .hoja > *, .sec > * { max-width: 44rem; }
-h1, h2, h3, h4 { font-family: var(--sans); color: var(--titulo); line-height: 1.15; letter-spacing: -.012em; text-wrap: balance; }
-h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800; margin: 0 0 .9rem; letter-spacing: -.025em; }
-h2 { font-size: clamp(1.55rem, 3vw, 2rem); font-weight: 750; margin: 0 0 .8rem; padding-top: 2.4rem; }
+h1, h2, h3, h4 { font-family: var(--f-titulo); color: var(--titulo); line-height: 1.15; letter-spacing: -.012em; text-wrap: balance; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: var(--w-h1); margin: 0 0 .9rem; letter-spacing: var(--ls-titulo); }
+h2 { font-size: clamp(1.55rem, 3vw, 2rem); font-weight: var(--w-h2); margin: 0 0 .8rem; padding-top: 2.4rem; }
 h3 { font-size: 1.28rem; font-weight: 700; margin: 1.9rem 0 .55rem; }
 h4 { font-size: 1.05rem; font-weight: 700; margin: 1.35rem 0 .35rem; color: var(--tinta); }
 p { margin: 0 0 .95rem; }
@@ -354,10 +510,11 @@ li > p { margin-bottom: .4rem; }
 strong { font-weight: 650; }
 .bajada { font-size: 1.24rem; line-height: 1.5; color: var(--tinta-suave); }
 mark {
-  color: var(--mark-tinta); padding: .04em .18em; margin: 0 -.1em;
-  background: linear-gradient(100deg, transparent .4%, var(--mark-fondo) 1.4%, var(--mark-fondo) 98.6%, transparent 99.6%);
+  color: var(--mark-color); padding: .04em .18em; margin: 0 -.1em;
+  background: var(--mark-forma);
+  outline: var(--mark-linea); outline-offset: -1px;
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
-  border-radius: .25em .1em .3em .12em;
+  border-radius: var(--mark-radio);
 }
 code { font: 400 .87em var(--mono); background: var(--papel); padding: .08em .3em; border-radius: 3px; border: 1px solid var(--cuadro); }
 pre.codigo {
@@ -435,7 +592,7 @@ figcaption { font-size: .9rem; color: var(--tinta-suave); margin-top: .35rem; }
 .idea { margin: 0 0 1.15rem; padding: .1rem 0 .1rem 1rem; border-left: 3px solid var(--linea); font-size: 1.1rem; }
 .idea > :last-child { margin-bottom: .2rem; }
 details > summary { cursor: pointer; }
-.pregunta { margin: 0 0 .65rem; border: 1px solid var(--borde-hoja); background: var(--hoja); border-radius: 5px; }
+.pregunta { margin: 0 0 .65rem; border: 1px solid var(--borde-hoja); background: var(--hoja); border-radius: var(--radio-tarjeta); }
 .tomado .pregunta { background: var(--lapiz); }
 .pregunta > summary { position: relative; display: block; padding: .6rem .85rem .6rem 2rem; font: 600 1rem/1.35 var(--sans); }
 .pregunta > summary::-webkit-details-marker { display: none; }
@@ -597,14 +754,14 @@ li.agregado { display: list-item; margin-left: 0; }
 .cr-sumar { order: 2; position: sticky; bottom: 0; z-index: 6; margin: 0 calc(-1 * clamp(.9rem, 2.5vw, 1.8rem)); padding: .55rem clamp(.9rem, 2.5vw, 1.8rem) calc(.55rem + env(safe-area-inset-bottom)); background: var(--papel); border-top: 1px solid var(--borde); box-shadow: 0 -8px 18px -14px rgb(0 0 0 / 45%); }
 .cr-fin { order: 3; display: flex; flex-wrap: wrap; gap: .45rem; }
 .cr-indice, .cr-donde { display: none; }
-.cr-lado-t { margin: 0 0 .45rem; font: 700 .82rem/1.2 var(--sans); color: var(--tinta-suave); }
+.cr-lado-t { margin: 0 0 .45rem; font: 700 .82rem/1.2 var(--sans); color: var(--tinta); }
 .cr-sumar .cr-lado-t { display: none; }
 .cr-sumar-b { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: thin; }
 .cr-sumar-b .b-sec { flex: none; }
 .cr-sumar .ba-salida { margin: .45rem 0 0; }
 .cr-cabeza { display: grid; gap: .2rem; }
 .cr-etiquetas .c-ayuda { margin: .3rem 0 0; font-size: .84rem; }
-.cr-chips { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .3rem .4rem; border: 1px solid var(--borde-control); border-radius: 6px; background: var(--lapiz); }
+.cr-chips { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .3rem .4rem; border: 1.5px solid var(--borde-control); border-radius: 6px; background: var(--lapiz); }
 .cr-chips:focus-within { outline: 2px solid var(--linea); outline-offset: 1px; }
 .cr-chips input { flex: 1 1 9rem; min-width: 0; padding: .3rem .25rem; border: 0; outline: 0; background: transparent; color: var(--tinta); font: 400 1rem/1.3 var(--sans); }
 .cr-chips-l { display: contents; list-style: none; }
@@ -766,6 +923,78 @@ mark.r-celeste { --mark-fondo: #b5e2ff; --mark-tinta: #0e2233; }
   .cr-fin { order: 0; flex-direction: column; padding-top: 1rem; border-top: 1px solid var(--borde); }
   .cr-fin button { width: 100%; }
 }
+/* «Armá tu resumen», the way to add and the own menu. Each kind to add carries its drawing and sits on solid paper,
+   so the grid never runs through the words; on a phone the six fit in one row at the bottom. Everything takes the
+   theme's tokens: it reads in every palette, by day and by night, and in every style. */
+.cr-ico { flex: none; width: 1.35rem; height: 1.35rem; fill: none; stroke: currentcolor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.cr-sumar-b:has(.cr-tipo) { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .25rem; overflow: visible; }
+.cr-sumar-b .cr-tipo { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; min-width: 0; min-height: 3.3rem; padding: .35rem 0; font-size: clamp(.64rem, 2.85vw, .74rem); line-height: 1.15; letter-spacing: -.01em; color: var(--tinta); background: var(--lapiz); border-color: var(--borde-control); }
+.cr-sumar-b .cr-tipo span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.cr-sumar-b .cr-tipo .cr-ico { color: var(--birome); }
+.cr-pista { display: none; }
+.cr-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: 0 .6rem; }
+.cr-aviso .ba-salida { flex: 1 1 10rem; }
+.cr-aviso #crDeshacer { margin-top: .45rem; }
+.cr-chip { background: color-mix(in srgb, var(--birome) 8%, var(--lapiz)); }
+.cr-chips-sumar { flex: none; margin-left: auto; }
+.cr-chips-sumar[hidden] { display: none; }
+/* Pressed and open keep their fill in Limpio too, where buttons are only words. */
+[data-estilo='limpio'] .cr-formato .b-sec[aria-pressed='true'] { color: var(--lapiz); background: var(--bien); text-decoration: none; }
+[data-estilo='limpio'] .cr-paleta .b-sec[aria-expanded='true'] { color: var(--lapiz); background: var(--birome); text-decoration: none; }
+[data-estilo='limpio'] .dlg-tipos .b-sec[aria-pressed='true'] { color: var(--papel); background: var(--linea); text-decoration: none; }
+[data-estilo='redondo'] .cr-sumar-b .cr-tipo { border-radius: 14px; padding-inline: 0; }
+[data-estilo='brutal'] .cr-sumar-b:has(.cr-tipo) { gap: .3rem; }
+[data-estilo] .cr-sumar-b .cr-tipo { padding-inline: 0; }
+/* A sheet in its own colours has its own ink, and Brutal's edges follow it. */
+.cr-mesa[data-colores] { --duro: var(--tinta); }
+/* The bar and the box's name are not text to select: a long press there opens the menu. */
+.cr-barra, .cr-recuadro-t { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+@media (max-width: 39.99rem) {
+  .cr-sumar { padding-inline: .5rem; }
+  [data-estilo='brutal'] .cr-sumar { padding-right: calc(.5rem + 3px); }
+  .cr-barra-der .cr-elegir { display: none; }
+  .cr-parte:focus-within .cr-formato { flex-wrap: wrap; overflow: visible; }
+}
+@media (min-width: 74rem) {
+  .cr-sumar-b:has(.cr-tipo) { display: flex; flex-direction: column; gap: .4rem; }
+  .cr-sumar-b .cr-tipo { flex-direction: row; justify-content: flex-start; gap: .6rem; min-height: 2.55rem; padding: .35rem .7rem; font-size: .95rem; letter-spacing: normal; }
+  [data-estilo] .cr-sumar-b .cr-tipo { padding-inline: .7rem; }
+  [data-estilo='redondo'] .cr-sumar-b .cr-tipo { border-radius: 999px; padding-inline: .9rem; }
+}
+@media (min-width: 74rem) and (hover: hover) and (pointer: fine) {
+  .cr-pista { display: block; margin: .3rem 0 0; font: 400 .82rem/1.35 var(--sans); color: var(--tinta-suave); }
+}
+/* The own menu: a slip of paper over the sheet that grows from where it was opened. Submenus open beside it. */
+.cr-menu { position: fixed; inset: auto; z-index: 60; margin: 0; min-width: 14rem; max-width: min(20rem, calc(100vw - 1rem)); max-height: calc(100vh - 1rem); max-height: calc(100dvh - 1rem); overflow-y: auto; overscroll-behavior: contain; padding: .3rem; color: var(--tinta); background: var(--lapiz); border: 1.5px solid var(--borde-control); border-radius: 8px; box-shadow: var(--sombra-hoja); font: 500 .92rem/1.3 var(--sans); transform-origin: var(--cr-origen, left top); animation: cr-menu-entra .14s cubic-bezier(.23, 1, .32, 1); }
+.cr-menu:focus { outline: none; }
+@keyframes cr-menu-entra { from { opacity: 0; transform: scale(.96); } }
+.cr-menu-i { position: relative; display: flex; align-items: center; gap: 1rem; width: 100%; min-height: 2.1rem; padding: .3rem .55rem .3rem 1.75rem; font: inherit; text-align: left; color: inherit; background: none; border: 0; border-radius: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cr-menu-i:focus, .cr-menu-i[aria-expanded='true'] { outline: none; background: var(--cuadro); box-shadow: inset 3px 0 0 var(--linea); }
+.cr-menu-txt { flex: 1; }
+.cr-menu kbd { font: 500 .78rem/1 var(--sans); color: var(--tinta-suave); white-space: nowrap; }
+.cr-menu-flecha { flex: none; width: 1rem; height: 1rem; margin-right: -.15rem; fill: none; stroke: currentcolor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cr-menu-i[aria-checked='true']::before { content: '✓'; content: '✓' / ''; position: absolute; left: .6rem; font-weight: 700; color: var(--birome); }
+.cr-menu-peligro { color: var(--mal); }
+.cr-menu-peligro:focus { color: var(--lapiz); background: var(--mal); box-shadow: none; }
+.cr-menu-sep { height: 1px; margin: .3rem .45rem; background: var(--borde); }
+.cr-menu-t { margin: 0; padding: .4rem .55rem .2rem 1.75rem; font: 700 .8rem/1.2 var(--sans); color: var(--tinta-suave); }
+[data-estilo='redondo'] .cr-menu { padding: .4rem; border-radius: 16px; }
+[data-estilo='redondo'] .cr-menu-i { border-radius: 10px; }
+[data-estilo='brutal'] .cr-menu { border: 2.5px solid var(--duro); border-radius: 0; box-shadow: 5px 5px 0 var(--duro); }
+[data-estilo='brutal'] .cr-menu-i { border-radius: 0; }
+[data-estilo='limpio'] .cr-menu { border-width: 1px; border-radius: 2px; }
+@media (pointer: coarse) {
+  .cr-menu-i { min-height: 2.75rem; }
+  .cr-menu kbd { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-menu { animation-name: cr-funde; }
+}
+@media (forced-colors: active) {
+  .cr-menu-i:focus, .cr-menu-i[aria-expanded='true'] { outline: 2px solid Highlight; outline-offset: -2px; }
+  .cr-sumar-b .cr-tipo .cr-ico { color: ButtonText; }
+  .cr-menu-sep { background: CanvasText; }
+}
 .su-crear { margin: -.3rem 0 .9rem; }
 .aviso-cambios { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; margin: 0 0 1.1rem; padding: .5rem .75rem; font: 400 .92rem/1.4 var(--sans); border: 1px dashed var(--rosa-borde); border-radius: 4px; }
 .aviso-cambios span { flex: 1 1 18rem; }
@@ -845,30 +1074,47 @@ html:has(dialog.acc[open]) { background: var(--lapiz); }
 .acc-fichas .acc-op { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: .3rem; margin: 0; padding: .55rem .2rem .5rem; text-align: center; border: 1.5px solid var(--borde-control); border-radius: 8px; }
 .acc-fichas .acc-op + .acc-op { margin-top: 0; }
 .acc-fichas .acc-op > span { grid-column: 1; font: 500 .8rem/1.2 var(--sans); }
-/* The looks, each with a tiny sheet in its colours: paper, a title, two lines and a highlighted one. */
-.acc-estilos { grid-template-columns: repeat(auto-fill, minmax(5.4rem, 1fr)); }
+/* Palettes and sheets, each tile drawn with the real option: its own data-paleta and data-hoja make the utn.css
+   colours apply inside it. A palette tile shows the current sheet; a sheet tile, the current palette. */
+.acc-estilos { grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); }
+.acc-formas { grid-template-columns: repeat(2, 1fr); }
 .acc-muestra {
-  --m-papel: #f8fafd; --m-cuadro: #e4ebf6; --m-tinta: #1d2438; --m-titulo: #1f3a9e; --m-resaltador: #fff06a; --m-borde: #cfd9ea;
-  position: relative; display: block; width: 100%; height: 3.3rem; overflow: hidden;
-  background-color: var(--m-papel); border: 1px solid var(--m-borde); border-radius: 5px;
-  background-image: linear-gradient(var(--m-cuadro) 1px, transparent 1px), linear-gradient(90deg, var(--m-cuadro) 1px, transparent 1px);
-  background-size: 8px 8px;
+  --paso: 9px;
+  position: relative; display: block; width: 100%; height: 4.4rem; overflow: hidden;
+  color: var(--tinta); background-color: var(--papel);
+  background-image: var(--brillo), var(--patron); background-size: auto, var(--patron-tam);
+  border: 1px solid var(--borde-hoja); border-radius: 6px;
 }
-.acc-muestra::before { content: ''; position: absolute; top: .45rem; left: .5rem; width: 55%; height: .3rem; background: var(--m-titulo); border-radius: 2px; }
-.acc-muestra-t { position: absolute; top: 1.15rem; left: .5rem; right: .5rem; height: .2rem; background: var(--m-tinta); border-radius: 2px; box-shadow: 0 .5rem 0 var(--m-tinta); opacity: .7; }
-.acc-muestra-r { position: absolute; top: 2.2rem; left: .5rem; width: 60%; height: .45rem; background: var(--m-resaltador); border-radius: 2px; }
-.acc-muestra[data-estilo='lisa'] { --m-papel: #f9fafb; background-image: none; }
-.acc-muestra[data-estilo='rayada'] {
-  --m-papel: #fdfdf7; --m-cuadro: #d3e2f3;
-  background-image: linear-gradient(transparent calc(100% - 1px), var(--m-cuadro) calc(100% - 1px));
-  background-size: 100% 8px;
+.acc-muestra-hoja {
+  position: absolute; inset: .5rem .5rem -1px .85rem; padding: .35rem .5rem 0;
+  text-align: left; background: var(--lapiz); box-shadow: var(--sombra-papel); border-radius: var(--radio-hoja) var(--radio-hoja) 0 0;
 }
-.acc-muestra[data-estilo='sepia'] { --m-papel: #f3ead8; --m-tinta: #3b2f23; --m-titulo: #7c3d10; --m-borde: #d6c4a2; background-image: none; }
-.acc-muestra[data-estilo='pizarron'] { --m-papel: #eef1f2; --m-tinta: #15191e; --m-titulo: #1747b5; --m-borde: #c6cdd2; background-image: none; }
-[data-tema='noche'] .acc-muestra { --m-papel: #06122b; --m-cuadro: #101f40; --m-tinta: #fff; --m-titulo: #fff; --m-resaltador: #ffe45c; --m-borde: #3a5689; }
-[data-tema='noche'] .acc-muestra[data-estilo='rayada'] { --m-papel: #0a1428; --m-cuadro: #1b2b4a; }
-[data-tema='noche'] .acc-muestra[data-estilo='sepia'] { --m-papel: #1a140e; --m-tinta: #f5ecdc; --m-titulo: #f2c48d; --m-borde: #625038; }
-[data-tema='noche'] .acc-muestra[data-estilo='pizarron'] { --m-papel: #173129; --m-tinta: #f3f1ea; --m-titulo: #fde9a0; --m-borde: #4a7365; }
+.acc-muestra-t { display: block; font: var(--w-h2) 1.1rem/1.05 var(--f-titulo); letter-spacing: var(--ls-titulo); color: var(--titulo); }
+.acc-muestra-hoja mark { display: inline-block; margin-top: .3rem; font: 400 .72rem/1.35 var(--serif); }
+.acc-hojas .acc-muestra { --paso: 11px; height: 3.4rem; }
+.acc-sub { min-width: 0; margin: 0 0 .9rem; padding: 0; border: 0; }
+.acc-sub legend { float: left; width: 100%; margin: .2rem 0 .35rem; padding: 0; font: 650 .95rem/1.3 var(--sans); color: var(--tinta); }
+.acc-sub legend + * { clear: both; }
+.acc-sub .acc-ayuda { display: block; margin: 0 0 .5rem; }
+.acc-tonos { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.1rem, 1fr)); gap: .5rem .3rem; }
+.acc-tono { position: relative; display: grid; justify-items: center; gap: .3rem; padding: .2rem 0; font: 500 .78rem/1.2 var(--sans); color: var(--tinta); text-align: center; cursor: pointer; }
+.acc-tono input {
+  appearance: none; width: 2rem; height: 2rem; margin: 0; cursor: pointer;
+  background: var(--tono, conic-gradient(var(--birome) 0 50%, var(--resaltador) 0)); border: 1.5px solid var(--borde-control); border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--lapiz);
+  transition: transform .14s cubic-bezier(.23, 1, .32, 1);
+}
+.acc-tono input:checked { border-color: var(--tinta); box-shadow: inset 0 0 0 2px var(--lapiz), 0 0 0 2px var(--tinta); }
+.acc-tono input:focus-visible { outline: 2.5px solid var(--linea); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .acc-tono:hover input { transform: scale(1.08); }
+}
+.acc-tono:active input { transform: scale(.94); }
+[data-legible] :is(h1, h2, h3, h4), [data-legible] .acc-muestra-t { font-family: var(--sans); }
+/* Swatches keep their colour with forced colours: the name below still says which one it is. */
+.acc-tono input { forced-color-adjust: none; }
+/* The night brightness does nothing by day. */
+html:not([data-tema='noche']) .acc-rango { display: none; }
 .acc-ayuda { margin: .6rem 0 0; font: 400 .88rem/1.4 var(--sans); color: var(--tinta-suave); }
 .acc-fichas .acc-op > .acc-aa { display: flex; align-items: flex-end; height: 1.9rem; font: 700 1rem/1 var(--sans); color: var(--titulo); }
 .acc-fichas .acc-op:nth-child(2) .acc-aa { font-size: 1.25rem; }
@@ -1465,3 +1711,82 @@ body.editando .sn-b, body.editando .vz-herr { display: none; }
   .vz-herr, .sn-b { display: none !important; }
   .vz-marca { background: none; box-shadow: none; }
 }
+
+/* Styles (Ajustes, «Estilo»): the shape of things, apart from the theme's colours. Cuaderno is the base above; each other
+   one reshapes the sheet, buttons, fields, cards and boxes with the theme's own colours, so any theme goes with any
+   style. With html in front they win over each component's own rule. A tile in Ajustes carries its own data-estilo. */
+@media screen {
+  /* Limpio: no sheet nor shadows. Flat cards split by thin lines, buttons that are just words. */
+  [data-estilo='limpio'] .hoja { box-shadow: none; border-radius: 0; background: transparent; padding-left: clamp(.4rem, 2vw, 1.4rem); border-left: 1px solid var(--borde); }
+  [data-estilo='limpio'] body { --brillo: none; }
+  [data-estilo='limpio'] .hoja h2 { border-top: 1px solid var(--borde); margin-top: 2.2rem; padding-top: 1.4rem; }
+  [data-estilo='limpio'] :is(.b-pri, .b-sec, .b-tema, .b-solo, .b-auto, .b-filtro, .b-peligro) {
+    border-color: transparent; background: transparent; border-radius: 0; padding-inline: .35rem;
+    text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: .22em;
+  }
+  [data-estilo='limpio'] .b-pri { color: var(--birome); }
+  [data-estilo='limpio'] .b-solo[aria-pressed='true'] { background: var(--resaltador); text-decoration: none; }
+  [data-estilo='limpio'] :is(.pregunta, .tarjeta, .ba-item, .mi-item, .c-fila) { background: transparent; box-shadow: none; border-radius: 0; border-width: 0 0 1px; border-style: solid; border-color: var(--borde); }
+  [data-estilo='limpio'] :is(.tomado, .ojo) { background: transparent; box-shadow: none; border-left-width: 2px; }
+  [data-estilo='limpio'] .ejercicio { border-style: solid; border-width: 1px 0; border-radius: 0; background: transparent; }
+  [data-estilo='limpio'] .nav a[aria-current='page'] { background: transparent; border-left-color: transparent; text-decoration: underline; text-underline-offset: .3em; }
+  [data-estilo='limpio'] :is(select, textarea, input:is([type='text'], [type='search'], [type='url'])) { border-width: 0 0 1.5px; border-radius: 0; background: transparent; }
+
+  /* Redondo: everything soft. Pill buttons and fields, big round cards with a wide shadow, the current page as a pill. */
+  [data-estilo='redondo'] .hoja { border-radius: 26px; }
+  [data-estilo='redondo'] :is(.b-pri, .b-sec, .b-tema, .b-solo, .b-auto, .b-filtro, .b-peligro, .ba-chip) { border-radius: 999px; padding-inline: 1.05rem; }
+  [data-estilo='redondo'] .barra .b-menu { border-radius: 50%; }
+  [data-estilo='redondo'] :is(input:is([type='text'], [type='search'], [type='url'])) { border-radius: 999px; padding-inline: .95rem; }
+  [data-estilo='redondo'] :is(select, textarea) { border-radius: 14px; }
+  [data-estilo='redondo'] :is(.pregunta, .tarjeta, .ba-item, .mi-item, .c-fila, .ba-dlg) { border-radius: 20px; }
+  [data-estilo='redondo'] :is(.tarjeta, .ba-item, .mi-item) { box-shadow: 0 2px 4px rgb(0 0 0 / 6%), 0 18px 40px -22px rgb(0 0 0 / 45%); }
+  [data-estilo='redondo'] :is(.tomado, .ojo) { border-left: 0; border-radius: 18px; padding-left: 1.15rem; box-shadow: inset 0 0 0 2px var(--resaltador-borde); }
+  [data-estilo='redondo'] .ojo { box-shadow: inset 0 0 0 2px var(--rosa-borde); }
+  [data-estilo='redondo'] .ejercicio { border-radius: 18px; }
+  [data-estilo='redondo'] .nav li:not(.nav-todas) a { border-left: 0; border-radius: 999px; }
+  [data-estilo='redondo'] .nav a[aria-current='page'] { background: var(--cuadro); }
+  [data-estilo='redondo'] mark { border-radius: .6em; }
+
+  /* Brutal: thick ink edges, hard shadows and square corners. Buttons sink when pressed. */
+  [data-estilo='brutal'] { --duro: var(--tinta); }
+  [data-estilo='brutal'] .hoja { border: 2.5px solid var(--duro); border-radius: 0; box-shadow: 8px 8px 0 var(--duro); }
+  [data-estilo='brutal'] h1 { font-weight: 800; letter-spacing: -.035em; }
+  [data-estilo='brutal'] .hoja h2 { display: inline-block; padding: .1rem .55rem; padding-top: .1rem; margin-top: 2.4rem; border: 2.5px solid var(--duro); box-shadow: 4px 4px 0 var(--duro); }
+  [data-estilo='brutal'] :is(.b-pri, .b-sec, .b-tema, .b-solo, .b-auto, .b-filtro, .b-peligro, .ba-chip) {
+    border: 2.5px solid var(--duro); border-radius: 0; box-shadow: 3px 3px 0 var(--duro); font-weight: 700;
+    transition: transform .08s ease, box-shadow .08s ease, background-color .12s ease;
+  }
+  [data-estilo='brutal'] :is(.b-pri, .b-sec, .b-tema, .b-solo, .b-auto, .b-filtro, .b-peligro, .ba-chip):active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--duro); }
+  [data-estilo='brutal'] .barra .b-menu { border-radius: 0; }
+  [data-estilo='brutal'] :is(select, textarea, input:is([type='text'], [type='search'], [type='url'])) { border: 2.5px solid var(--duro); border-radius: 0; }
+  [data-estilo='brutal'] :is(.pregunta, .tarjeta, .ba-item, .mi-item, .c-fila, .ba-dlg) { border: 2.5px solid var(--duro); border-radius: 0; box-shadow: 5px 5px 0 var(--duro); }
+  [data-estilo='brutal'] :is(.tomado, .ojo) { border: 2.5px solid var(--duro); border-left-width: 10px; box-shadow: 5px 5px 0 var(--duro); }
+  [data-estilo='brutal'] .tomado { border-left-color: var(--resaltador-borde); }
+  [data-estilo='brutal'] .ojo { border-left-color: var(--rosa-borde); }
+  [data-estilo='brutal'] .ejercicio { border: 2.5px dashed var(--duro); border-radius: 0; }
+  [data-estilo='brutal'] .nav a { border: 2.5px solid transparent; }
+  [data-estilo='brutal'] .nav a[aria-current='page'] { color: var(--lapiz); background: var(--tinta); border-color: var(--tinta); }
+  [data-estilo='brutal'] mark { border-radius: 0; box-shadow: inset 0 -.12em 0 var(--duro); }
+  /* The square icon buttons (menu, close) keep their size in every style. */
+  [data-estilo] :is(.barra .b-menu, .mn-cabeza .mn-cerrar) { padding: 0; text-decoration: none; }
+  [data-estilo='redondo'] .mn-cabeza .mn-cerrar { border-radius: 50%; }
+  [data-estilo='brutal'] .mn-cabeza .mn-cerrar { border-radius: 0; }
+}
+@media screen and (prefers-reduced-motion: reduce) {
+  [data-estilo='brutal'] :is(.b-pri, .b-sec, .b-tema, .b-solo, .b-auto, .b-filtro, .b-peligro, .ba-chip):active { transform: none; }
+}
+
+/* Style tiles in Ajustes: a card, a field and a button drawn with each style's rules, in the theme in use. */
+.acc-formas .acc-muestra { display: grid; align-content: center; gap: .3rem; padding: .45rem .55rem; height: 4.4rem; }
+.acc-forma-tarjeta { display: block; height: 1.25rem; background: var(--lapiz); border: 1px solid var(--borde-hoja); border-radius: 4px; box-shadow: var(--sombra-hoja); }
+.acc-forma-fila { display: flex; gap: .3rem; }
+.acc-forma-campo { flex: 1; height: 1.05rem; background: var(--lapiz); border: 1px solid var(--borde-control); border-radius: 4px; }
+.acc-forma-boton { width: 1.8rem; height: 1.05rem; background: var(--birome); border: 1.5px solid var(--birome); border-radius: 4px; }
+.acc-muestra[data-estilo='limpio'] .acc-forma-tarjeta { border-width: 0 0 1px; border-radius: 0; box-shadow: none; background: transparent; }
+.acc-muestra[data-estilo='limpio'] .acc-forma-campo { border-width: 0 0 1.5px; border-radius: 0; background: transparent; }
+.acc-muestra[data-estilo='limpio'] .acc-forma-boton { height: .2rem; align-self: flex-end; border-radius: 0; }
+.acc-muestra[data-estilo='redondo'] .acc-forma-tarjeta { border-radius: 10px; box-shadow: 0 6px 12px -6px rgb(0 0 0 / 40%); }
+.acc-muestra[data-estilo='redondo'] :is(.acc-forma-campo, .acc-forma-boton) { border-radius: 999px; }
+.acc-muestra[data-estilo='brutal'] .acc-forma-tarjeta { border: 2px solid var(--tinta); border-radius: 0; box-shadow: 3px 3px 0 var(--tinta); }
+.acc-muestra[data-estilo='brutal'] .acc-forma-campo { border: 2px solid var(--tinta); border-radius: 0; }
+.acc-muestra[data-estilo='brutal'] .acc-forma-boton { border: 2px solid var(--tinta); border-radius: 0; box-shadow: 2px 2px 0 var(--tinta); }

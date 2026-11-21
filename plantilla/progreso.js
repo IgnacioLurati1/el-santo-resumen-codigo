@@ -24,6 +24,7 @@
     { re: /^utn:[a-z0-9_-]+:(erradas|sim|solo|cambios)$/, materia: true }, // study progress and changes to a summary
     { re: /^utn:[a-z0-9_-]+:senaladores$/, materia: true }, // the bookmarks of a subject (senaladores.js)
     { re: /^utn:[a-z0-9_-]+:(hecho|quiz):[a-z0-9_.-]{1,100}$/, materia: true }, // exercises done, best quiz marks
+    { re: /^utn:[a-z0-9_-]+:indice:[a-z0-9_.-]{1,100}$/, materia: true }, // what you marked done in a page's index (indice.js)
   ];
   const FORMA = /^utn:[a-z0-9][a-z0-9:._-]{0,149}$/;
   const patron = (k) => (typeof k === 'string' && FORMA.test(k) ? PATRONES.find((p) => p.re.test(k)) : undefined);

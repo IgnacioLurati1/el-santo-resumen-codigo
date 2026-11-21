@@ -276,7 +276,8 @@
       if (!h) return;
       if (/^H[1-6]$/.test(h.tagName)) {
         const limpio = h.cloneNode(true);
-        limpio.querySelector('.rep-b')?.remove();
+        // The formulas' hidden copy for screen readers would repeat them («nnn-ario»): only the visible text goes.
+        limpio.querySelectorAll('.rep-b, .katex-mathml').forEach((x) => x.remove());
         a.textContent = limpio.textContent || a.dataset.orig;
       }
       a.parentElement.hidden = !editando && !!h.closest('[data-sacado]');

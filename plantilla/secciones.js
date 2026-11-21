@@ -3,23 +3,6 @@
   const d = document.documentElement;
   delete d.dataset.foco;
 
-  const bTema = document.getElementById('tema');
-  const pintarTema = () => {
-    const noche = d.dataset.tema === 'noche';
-    bTema.textContent = noche ? 'Modo día' : 'Modo noche';
-  };
-  bTema.addEventListener('click', () => {
-    const noche = d.dataset.tema === 'noche';
-    if (noche) delete d.dataset.tema;
-    else d.dataset.tema = 'noche';
-    try {
-      localStorage.setItem('utn:tema', noche ? 'dia' : 'noche');
-    } catch {
-      /* No storage: the choice lasts until the page closes. */
-    }
-    pintarTema();
-  });
-  pintarTema();
 
   document.querySelectorAll('.s-mail').forEach((a) => {
     a.addEventListener('click', () => {

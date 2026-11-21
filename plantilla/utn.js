@@ -27,25 +27,6 @@
     return c;
   };
 
-  // Night mode. The button says where it takes you, so it is not a pressed or unpressed toggle: «Modo día» pressed
-  // would read as day mode being on.
-  const bTema = $('#tema');
-  const pintarTema = () => {
-    const noche = document.documentElement.dataset.tema === 'noche';
-    bTema.textContent = noche ? 'Modo día' : 'Modo noche';
-  };
-  bTema.addEventListener('click', () => {
-    const noche = document.documentElement.dataset.tema === 'noche';
-    if (noche) delete document.documentElement.dataset.tema;
-    else document.documentElement.dataset.tema = 'noche';
-    try {
-      localStorage.setItem('utn:tema', noche ? 'dia' : 'noche');
-    } catch {
-      /* No storage: the choice lasts until the page closes. */
-    }
-    pintarTema();
-  });
-  pintarTema();
 
   // Exercise index: filters, and which ones are done.
   const filas = $$('.ej-fila');

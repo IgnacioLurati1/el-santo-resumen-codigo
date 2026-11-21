@@ -35,7 +35,7 @@ const VINCULO_CVG = [
 
 // Pages with their own look, in plantilla/paginas.css: the notebook of the home page instead of plain text.
 const CON_ESTILO = ['sysacad-lindo.html', 'privacidad.html', 'agradecimientos.html', 'novedades.html'];
-const SCRIPTS = { 'banco.html': ['cuenta', 'estrellas', 'banco'], 'subir.html': ['cuenta', 'estrellas', 'banco'], 'consejos.html': ['cuenta', 'estrellas', 'consejos'], 'crear.html': ['piezas', 'crear'] };
+const SCRIPTS = { 'banco.html': ['cuenta', 'estrellas', 'banco'], 'subir.html': ['cuenta', 'estrellas', 'banco'], 'mis-resumenes.html': ['cuenta', 'estrellas', 'banco', 'mis'], 'consejos.html': ['cuenta', 'estrellas', 'consejos'], 'crear.html': ['piezas', 'crear'] };
 const conCuenta = (s) => (SCRIPTS[s.archivo] || []).includes('cuenta');
 const pagina = (s, descripcion, cuerpo) => `<!doctype html>
 <html lang="es" data-tema="noche">
@@ -49,7 +49,7 @@ const pagina = (s, descripcion, cuerpo) => `<!doctype html>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@500;600&family=Shantell+Sans:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
 <link rel="stylesheet" href="_/utn.css">
 <link rel="stylesheet" href="_/carrera.css">
 ${CON_ESTILO.includes(s.archivo) ? '<link rel="stylesheet" href="_/paginas.css">\n' : ''}<script src="_/tema.js"></script>
@@ -67,13 +67,12 @@ ${botonMenu}
 <div class="c-acciones">
 <button type="button" id="foco" hidden></button>
 ${conCuenta(s) ? botonCuenta('b-tema') : ''}
-<button type="button" id="accesibilidad" class="b-tema">Accesibilidad</button>
+<button type="button" id="accesibilidad" class="b-tema">Configuración</button>
 ${botonesEmergencia('b-tema')}
-<button type="button" id="tema" class="b-tema">Modo día</button>
 </div>
 </header>
 ${menu({ actual: s.archivo })}
-<main id="contenido" class="c-hoja s-hoja${['banco.html', 'consejos.html'].includes(s.archivo) ? ' ba-ancho' : s.archivo === 'crear.html' ? ' cr-ancho' : ''}">
+<main id="contenido" class="c-hoja s-hoja${['banco.html', 'consejos.html', 'mis-resumenes.html'].includes(s.archivo) ? ' ba-ancho' : s.archivo === 'crear.html' ? ' cr-ancho' : ''}">
 <h1>${esc(s.nombre)}</h1>
 ${cuerpo}
 </main>
@@ -149,8 +148,8 @@ ${icono('gracias', 'pg-dibujo')}
   const opcionesMateria = [...materias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((m) => `<option value="${m.slug}">${esc(m.nombre)}</option>`).join('');
   const opcionesInstancia = [['parcial-1', '1° parcial'], ['parcial-2', '2° parcial'], ['parcial-3', '3° parcial'], ['parcial-4', '4° parcial'], ['final', 'Final o para todo']].map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   const chipsInstancia = [['', 'Todas'], ['parcial-1', '1° parcial'], ['parcial-2', '2° parcial'], ['parcial-3', '3° parcial'], ['parcial-4', '4° parcial'], ['final', 'Final']].map(([v, n]) => `<button type="button" class="ba-chip" data-instancia="${v}" aria-pressed="${v ? 'false' : 'true'}">${n}</button>`).join('');
-  const errorDe = (id) => `<p id="${id}Error" class="ba-error" hidden></p>`;
-  const bancoHtml = `<div class="ba-cabeza"><p class="bajada">Resúmenes que subieron otros alumnos, en PDF, Word, PowerPoint, HTML o Google. Ningún docente los revisó.</p><a class="b-pri ba-ir" id="baIrSubir" href="subir.html">Subir un resumen</a></div>
+  const errorDe = (id) => `<p id="${id}Error" class="ba-error" aria-live="polite"></p>`;
+  const bancoHtml = `<div class="ba-cabeza"><p class="bajada">Resúmenes que subieron otros alumnos, en PDF, Word, PowerPoint, HTML o Google. Ningún docente los revisó.</p><div class="ba-ir-fila"><a class="ba-mis" href="mis-resumenes.html">Mis resúmenes</a><a class="b-pri ba-ir" id="baIrSubir" href="subir.html">Subir un resumen</a></div></div>
 <p id="baSin" class="c-ayuda">El banco todavía no está disponible. Los resúmenes de cada materia se siguen leyendo igual.</p>
 <div id="baTodo" hidden>
 <div class="ba-filtros" role="group" aria-label="Filtrar resúmenes">
@@ -173,18 +172,15 @@ ${icono('gracias', 'pg-dibujo')}
 <p id="baSin" class="c-ayuda">El banco todavía no está disponible.</p>
 <div id="baTodo" class="su-marco" hidden>
 <form id="baForm" novalidate>
+<div class="ba-campo su-zona-fila"><span id="suZonaRotulo" class="ba-rotulo">Tu resumen</span><div id="suZona"></div><p class="ba-ayuda su-crear">¿No lo tenés en un archivo? <a id="suIrCrear" href="crear.html">Armalo acá</a>, con texto, fotos y gráficos de la materia.</p></div>
+<div class="ba-campo"><label for="suTitulo">Título</label><input id="suTitulo" type="text" maxlength="120" autocomplete="off" placeholder="Por ejemplo: SQL con ejercicios resueltos" aria-describedby="suTituloError">${errorDe('suTitulo')}</div>
 <div class="ba-doble">
 <div class="ba-campo"><label for="suMateria">Materia</label><select id="suMateria" aria-describedby="suMateriaError"><option value="">Elegí la materia</option>${opcionesMateria}</select>${errorDe('suMateria')}</div>
 <div class="ba-campo"><label for="suInstancia">Instancia</label><select id="suInstancia" aria-describedby="suInstanciaError"><option value="">Elegí la instancia</option>${opcionesInstancia}</select>${errorDe('suInstancia')}</div>
 </div>
-<div class="ba-campo"><label for="suTitulo">Título</label><input id="suTitulo" type="text" maxlength="120" autocomplete="off" placeholder="Por ejemplo: SQL con ejercicios resueltos" aria-describedby="suTituloError">${errorDe('suTitulo')}</div>
-<fieldset class="ba-origen" id="suFormatos"><legend>Qué vas a subir</legend><label class="ba-casilla"><input type="radio" name="suOrigen" value="archivo" checked><span>Un archivo</span></label><label class="ba-casilla"><input type="radio" name="suOrigen" value="enlace"><span>Un enlace de Google Docs o Google Slides</span></label></fieldset>
-<p class="ba-ayuda su-crear">¿No lo tenés en un archivo? <a id="suIrCrear" href="crear.html">Armalo acá</a>, con texto, fotos y gráficos de la materia.</p>
-<div class="ba-campo" id="suCampoArchivo"><label for="suArchivo">Archivo</label><input id="suArchivo" type="file" accept=".pdf,.docx,.pptx,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html" aria-describedby="suArchivoAyuda suArchivoError"><small id="suArchivoAyuda" class="ba-ayuda">PDF, Word .docx o PowerPoint .pptx hasta 15 MB, HTML hasta 5 MB. Los .doc, .docm, .ppt y .pptm no entran, porque pueden traer programas que se ejecutan solos al abrirlos. Guardalos como .docx, .pptx o PDF.</small>${errorDe('suArchivo')}</div>
-<div class="ba-campo" id="suCampoEnlace" hidden><label for="suEnlace">Enlace</label><input id="suEnlace" type="url" autocomplete="off" placeholder="https://docs.google.com/document/d/..." aria-describedby="suEnlaceAyuda suEnlaceError"><small id="suEnlaceAyuda" class="ba-ayuda">Tiene que poder verlo cualquiera que tenga el enlace. El documento vive en Google y su dueño lo puede cambiar después.</small>${errorDe('suEnlace')}</div>
 <div class="ba-campo cr-etiquetas su-etiquetas"><label for="suEtiqueta">Etiquetas, si querés</label><div class="cr-chips"><ul id="suChips" class="cr-chips-l" aria-label="Etiquetas puestas" hidden></ul><input id="suEtiqueta" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" placeholder="Por ejemplo: Parcial 1" aria-describedby="suEtiquetaAyuda suEtiquetaError"></div><p class="c-ayuda" id="suEtiquetaAyuda">Escribí una y tocá Enter, hasta 8. Sirven para encontrarlo en el banco.</p>${errorDe('suEtiqueta')}<p id="suEtiquetaVoz" class="vh" role="status"></p></div>
 <div class="ba-campo"><label class="ba-casilla"><input id="suAcepto" type="checkbox" aria-describedby="suAceptoError"><span>Es mío o tengo permiso para compartirlo, y no trae datos de otras personas.</span></label>${errorDe('suAcepto')}</div>
-<button type="submit" id="suEnviar" class="b-pri">Subir resumen</button>
+<button type="submit" id="suEnviar" class="b-pri su-enviar">Subir resumen</button>
 <p id="suSalida" class="es-estado ba-salida" role="status" tabindex="-1" hidden></p>
 </form>
 <aside class="su-lado" aria-labelledby="suQue"><h2 id="suQue">Qué entra</h2>
@@ -193,6 +189,21 @@ ${icono('gracias', 'pg-dibujo')}
 <ul><li>Archivos con macros, partes que se ejecutan solas o que cargan algo de afuera.</li><li>Datos de otras personas.</li><li>Material que no es tuyo y no tenés permiso para compartir.</li></ul>
 <p class="s-fuente"><a href="privacidad.html">Qué se guarda cuando subís algo</a></p>
 </aside>
+</div>
+<p class="su-volver"><a href="banco.html">Volver al banco</a> <a href="mis-resumenes.html">Mis resúmenes</a></p>`;
+
+  // What this account uploaded, with its state, and from there edit it or upload a new version (mis.js).
+  const misHtml = `<div class="ba-cabeza"><p class="bajada">Lo que subiste al banco y en qué está cada uno.</p><a class="b-pri ba-ir" href="subir.html">Subir un resumen</a></div>
+<p id="baSin" class="c-ayuda">El banco todavía no está disponible.</p>
+<div id="baTodo" hidden>
+<template id="baOpciones"><select id="baMateria">${opcionesMateria}</select><select id="baInstancia">${opcionesInstancia}</select></template>
+<div id="miIngresar" class="mi-ingresar" hidden><p>Ingresá con tu cuenta para ver lo que subiste.</p><button type="button" class="b-pri" id="miIngresarB">Ingresar</button></div>
+<p id="miNoEsta" class="c-ayuda" hidden>Mis resúmenes todavía no está disponible.</p>
+<div id="miFalla" class="ba-falla" role="alert" hidden><p id="miFallaTexto"></p><button type="button" id="miReintentar" class="b-sec">Probar de nuevo</button></div>
+<p id="miCuenta" class="ba-cuenta" role="status"></p>
+<h2 class="vh">Tus resúmenes</h2>
+<ul id="miLista" class="mi-lista"></ul>
+<div id="miVacio" class="mi-vacio" hidden><p>Todavía no subiste ningún resumen.</p><a class="b-pri" href="subir.html">Subir el primero</a></div>
 </div>
 <p class="su-volver"><a href="banco.html">Volver al banco</a></p>`;
 
@@ -331,12 +342,22 @@ ${bajar('b-sec')}</div>
 <p class="pg-nota">Las capturas tienen datos inventados.</p></div>
 <ul class="sy-capturas" role="list">${CAPTURAS_SYSACAD.map(([n, w, h, pie, alt]) => `<li><figure><a class="sy-foto" href="_/sysacad/${n}.webp"><img src="_/sysacad/${n}.webp" width="${w}" height="${h}" loading="lazy" decoding="async" alt="${esc(alt)}"></a><figcaption>${esc(pie)}</figcaption></figure></li>`).join('')}</ul></section>`;
 
+  // The kinds of part «Armá tu resumen» adds, each with its pen drawing (crear.js reads them by id).
+  const CR_TIPOS = [
+    ['crTitulo2', 'Título', 'Sumar un título', '<path d="M5 5.5h14M12 5.5V19M9.5 19h5"/>'],
+    ['crTexto', 'Texto', 'Sumar texto', '<path d="M4 6.5h16M4 11h16M4 15.5h16M4 20h9"/>'],
+    ['crNota', 'Recuadro', 'Sumar un recuadro', '<rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M7.5 4.5v15M11 9.5h6M11 14h4"/>'],
+    ['crFormula', 'Fórmula', 'Sumar una fórmula', '<path d="M3 13.5h2.8l2.7 5.5L13 5h8M14.5 10.5l5 6M19.5 10.5l-5 6"/>'],
+    ['crFoto', 'Foto', 'Sumar una foto', '<rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.5" cy="10" r="1.7"/><path d="M3.5 17.5l5.5-5 3.5 3 3-2.5 5 4.5"/>'],
+    ['crGrafico', 'Gráfico', 'Sumar un gráfico o un simulador', '<path d="M4 3.5v16.5h16.5"/><path d="M6.5 16.5c2.5-.5 3.5-9 7-9 2.6 0 3 4.5 6 4.5"/>'],
+  ];
   const crearHtml = `<p class="bajada">Armá tu resumen con texto, recuadros, fórmulas, fotos y los gráficos y simuladores de la materia. Se guarda solo en este navegador hasta que lo bajes, lo compartas o lo lleves al banco.</p>
 <div id="crTodo" class="cr-marco">
 <aside class="cr-lado" aria-label="Herramientas del resumen">
-<div class="cr-sumar" role="group" aria-labelledby="crSumarT"><p class="cr-lado-t" id="crSumarT">Sumar</p><div class="cr-sumar-b"><button type="button" class="b-sec" id="crTitulo2" aria-label="Sumar un título">Título</button><button type="button" class="b-sec" id="crTexto" aria-label="Sumar texto">Texto</button><button type="button" class="b-sec" id="crNota" aria-label="Sumar un recuadro">Recuadro</button><button type="button" class="b-sec" id="crFormula" aria-label="Sumar una fórmula">Fórmula</button><button type="button" class="b-sec" id="crFoto" aria-label="Sumar una foto">Foto</button><button type="button" class="b-sec" id="crGrafico" aria-label="Sumar un gráfico o un simulador">Gráfico</button></div>
+<div class="cr-sumar" role="group" aria-labelledby="crSumarT"><p class="cr-lado-t" id="crSumarT">Sumar</p><div class="cr-sumar-b">${CR_TIPOS.map(([id, texto, etiqueta, trazo]) => `<button type="button" class="b-sec cr-tipo" id="${id}" aria-label="${etiqueta}"><svg class="cr-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${trazo}</svg><span>${texto}</span></button>`).join('')}</div>
 <p class="cr-donde" id="crDonde">Se suma al final.</p>
-<p id="crSalida" class="es-estado ba-salida vh" role="status" tabindex="-1"></p></div>
+<p class="cr-pista">Clic derecho sobre una parte para más opciones.</p>
+<div class="cr-aviso"><p id="crSalida" class="es-estado ba-salida vh" role="status" tabindex="-1"></p><button type="button" class="b-sec b-chico" id="crDeshacer" aria-keyshortcuts="Control+Z" hidden>Deshacer</button></div></div>
 <nav class="cr-indice" aria-labelledby="crIndiceT" hidden><p class="cr-lado-t" id="crIndiceT">En tu resumen</p><ol id="crIndice"></ol></nav>
 <div class="cr-fin"><button type="button" class="b-pri" id="crSubir">Llevarlo al banco</button><button type="button" class="b-sec" id="crBajar">Bajar el archivo</button><button type="button" class="b-sec" id="crLink">Compartir por link</button><button type="button" class="b-peligro" id="crBorrar">Empezar de cero</button></div>
 </aside>
@@ -346,7 +367,7 @@ ${bajar('b-sec')}</div>
 <div class="ba-campo"><label for="crMateria">Materia</label><select id="crMateria"><option value="">Elegí la materia</option>${opcionesMateria}</select></div>
 <div class="ba-campo"><label for="crTitulo">Título</label><input id="crTitulo" type="text" maxlength="120" autocomplete="off" placeholder="Por ejemplo: Integrales dobles con ejemplos"></div>
 </div>
-<div class="ba-campo cr-etiquetas"><label for="crEtiqueta">Etiquetas</label><div class="cr-chips"><ul id="crChips" class="cr-chips-l" aria-label="Etiquetas puestas" hidden></ul><input id="crEtiqueta" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" placeholder="Por ejemplo: Parcial 1" aria-describedby="crEtiquetaAyuda"></div><p class="c-ayuda" id="crEtiquetaAyuda">Escribí una y tocá Enter. Hasta 8.</p></div>
+<div class="ba-campo cr-etiquetas"><label for="crEtiqueta">Etiquetas</label><div class="cr-chips"><ul id="crChips" class="cr-chips-l" role="list" aria-label="Etiquetas puestas" hidden></ul><input id="crEtiqueta" type="text" maxlength="30" autocomplete="off" enterkeyhint="done" placeholder="Por ejemplo: Parcial 1" aria-describedby="crEtiquetaAyuda"><button type="button" class="b-pri b-chico cr-chips-sumar" id="crEtiquetaSumar" tabindex="-1" hidden>Sumar</button></div><p class="c-ayuda" id="crEtiquetaAyuda">Escribí una y tocá Enter. Hasta 8.</p></div>
 <fieldset class="cr-colores" aria-describedby="crColoresAyuda"><legend>Colores</legend><label class="cr-color"><input type="color" id="crFondo" value="#e7ecf3"> Fondo</label><label class="cr-color"><input type="color" id="crHojaColor" value="#ffffff"> Hoja</label><button type="button" class="b-texto" id="crColoresSacar" hidden>Volver a los de siempre</button><p class="c-ayuda" id="crColoresAyuda">Van con el resumen cuando lo bajás, lo compartís o lo llevás al banco.</p></fieldset>
 </div>
 <div id="crMesa" class="cr-mesa">
@@ -365,6 +386,7 @@ ${bajar('b-sec')}</div>
     'banco.html': ['Resúmenes que subieron otros alumnos, en PDF, Word, PowerPoint, HTML o Google.', bancoHtml],
     'consejos.html': ['Consejos de quienes ya cursaron, para toda la carrera y para cada materia.', consejosHtml],
     'subir.html': ['Subí tu resumen al banco.', subirHtml],
+    'mis-resumenes.html': ['Los resúmenes que subiste al banco y en qué está cada uno.', misHtml],
     'crear.html': ['Armá un resumen con texto, fórmulas, fotos y gráficos de la materia, para bajarlo, compartirlo o subirlo al banco.', crearHtml],
     'privacidad.html': ['Qué se guarda en este sitio, para qué y por cuánto tiempo.', privacidadHtml],
     'sysacad-lindo.html': ['Extensión para Chrome o Edge que ordena Sysacad por año, con mapa de correlativas y modo oscuro.', sysacadHtml],

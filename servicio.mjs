@@ -16,7 +16,7 @@ export const botonCuenta = (clase) => `<button type="button" class="${clase}" da
 // progreso.js goes right after api.js on every page: it keeps the progress of a signed-in account in step (012).
 export const scriptsServicio = (assets, extras = []) => ['api', 'progreso', 'uso', 'emergencia', ...extras].map((s) => `<script src="${assets}/${s}.js" defer></script>`).join('\n');
 
-const COMPARTIDOS = ['progreso.js', 'uso.js', 'emergencia.js', 'cuenta.js', 'estrellas.js', 'banco.js', 'reportar.js', 'propuesta.js', 'diagrama.js', 'consejos.js', 'crear.js'];
+const COMPARTIDOS = ['progreso.js', 'uso.js', 'emergencia.js', 'cuenta.js', 'estrellas.js', 'banco.js', 'mis.js', 'reportar.js', 'propuesta.js', 'diagrama.js', 'consejos.js', 'crear.js'];
 
 // The service address and its publishable key are decided at build time. Each one is a single constant.
 const delArmado = () => {

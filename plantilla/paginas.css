@@ -179,12 +179,13 @@
   .sy-pegada, .sy-capturas figure, .ag-creador { box-shadow: none; transform: none; }
 }
 
-/* Notas del parche. One block per date; the kind of each change goes in the margin, written by hand. */
+/* Notas del parche. One block per date; the kind of each change is a small outlined pill on the left, as in Super CVG. */
 .nv-fecha + .nv-fecha { margin-top: 2.4rem; }
 .nv-lista { display: grid; gap: .75rem; max-width: 46rem; margin: 0; padding: 0; list-style: none; }
 .nv-lista li { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: .9rem; align-items: baseline; font: 400 1.04rem/1.55 var(--serif); color: var(--tinta); }
-.nv-tipo { font: 600 1rem/1.3 var(--mano); color: var(--titulo); transform: rotate(-2deg); transform-origin: left; }
-.nv-mejora { color: var(--tinta-suave); }
+.nv-tipo { justify-self: start; padding: .05rem .55rem; border: 1px solid currentColor; border-radius: 999px; font: 600 .85rem/1.5 var(--mano); }
+.nv-nuevo { color: var(--bien); }
+.nv-mejora { color: var(--birome); }
 .nv-arreglo { color: var(--mal); }
 @media (max-width: 30rem) {
   .nv-lista li { grid-template-columns: minmax(0, 1fr); gap: .1rem; }

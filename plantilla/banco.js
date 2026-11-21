@@ -19,6 +19,14 @@
   const chips = [...document.querySelectorAll('.ba-chip')];
   const irSubir = [$('baIrSubir'), ...document.querySelectorAll('[data-con-materia]')].filter(Boolean);
   const opcion = (sel, valor) => [...sel.options].find((o) => o.value === valor)?.textContent || valor;
+  // The names of subjects and instances come from the page's own lists: the bank's filters, the upload form or, in
+  // «Mis resúmenes», a template with both.
+  const plantilla = document.getElementById('baOpciones')?.content;
+  const lista$ = (...ids) => ids.map((i) => $(i) || plantilla?.getElementById(i)).find(Boolean);
+  const selMateria = lista$('baMateria', 'suMateria');
+  const selInstancia = lista$('baInstancia', 'suInstancia');
+  const nombreMateria = (v) => (selMateria ? opcion(selMateria, v) : v);
+  const nombreInstancia = (v) => (selInstancia ? opcion(selInstancia, v) : v);
   const MB = 1024 * 1024;
   const FORMATOS = { pdf: { nombre: 'PDF', tope: 15 * MB }, docx: { nombre: 'Word', tope: 15 * MB }, pptx: { nombre: 'PowerPoint', tope: 15 * MB }, html: { nombre: 'HTML', tope: 5 * MB }, gdoc: { nombre: 'Google Docs' }, gslides: { nombre: 'Google Slides' } };
   const ENLACE_GOOGLE = /^https:\/\/docs\.google\.com\/(document|presentation)\/d\/[A-Za-z0-9_-]{20,100}(?:[/?#]|$)/;
@@ -163,8 +171,7 @@
         con('h3', 'ba-titulo', esq(titulo), ' ', esq('45%', 'esq-angosto')),
         con('p', 'ba-meta', esq(meta), ' ', esq('70%', 'esq-angosto'), ' ', esq('40%', 'esq-angosto'))),
       con('div', 'ba-gusto', con('span', 'ba-gusta', esq('1.45rem', 'esq-redondo'), con('span', 'ba-gusta-n', esq('1.1em')))),
-      con('div', 'ba-acciones', esq('7rem', 'esq-boton'), con('div', 'ba-cvg', esq('9.6rem', 'esq-boton esq-chico'))),
-      con('div', 'ba-pie', enlaceEsq('6.6em'), enlaceEsq('5.2em'))
+      con('div', 'ba-acciones', esq('5.5rem', 'esq-boton'), con('div', 'ba-cvg', esq('9.6rem', 'esq-boton esq-chico')), con('div', 'ba-menu-caja', esq('2.4rem', 'esq-boton esq-chico')))
     );
     return li;
   };
@@ -180,6 +187,7 @@
     return n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${E.uno(n / (1024 * 1024))} MB`;
   };
   const fecha = (t) => {
+    if (!t) return '';
     const f = new Date(t);
     return Number.isNaN(f.getTime()) ? '' : f.toLocaleDateString('es-AR');
   };
@@ -205,12 +213,77 @@
   const ACEPTA = '.pdf,.docx,.pptx,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html';
   const AVISO_GOOGLE = 'El documento vive en Google y su dueño lo puede cambiar.';
 
-  // Report form, for a summary or a comment. `cuerpo` is what identifies it in the request.
-  const denuncia = (cuerpo, motivos, alListo) => {
+  // Pen strokes on a 24 grid, in the text colour.
+  const SVG = 'http://www.w3.org/2000/svg';
+  const trazo = (d, clase = '') => {
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    if (clase) svg.setAttribute('class', clase);
+    const p = document.createElementNS(SVG, 'path');
+    p.setAttribute('d', d);
+    svg.append(p);
+    return svg;
+  };
+  const CRUZ = 'M6 6l12 12M18 6L6 18';
+  const PUNTOS = 'M5 12h.01M12 12h.01M19 12h.01';
+
+  // A dialog of the bank: report, edit, new version. A new one each time, gone when it closes. Escape closes it, unless
+  // something is on its way, and the focus goes back to what opened it.
+  const dialogo = (titulo, clase = '') => {
     serie += 1;
-    const caja = el('details', 'ba-mas');
-    caja.append(el('summary', '', 'Denunciar'));
+    const d = el('dialog', `dlg ba-dlg${clase ? ` ${clase}` : ''}`);
+    const h = el('h2', '', titulo);
+    h.id = `baDlg${serie}`;
+    d.setAttribute('aria-labelledby', h.id);
+    const x = el('button', 'ba-dlg-x');
+    x.type = 'button';
+    x.setAttribute('aria-label', 'Cerrar');
+    x.append(trazo(CRUZ));
+    const cuerpo = el('div', 'ba-dlg-cuerpo');
+    d.append(con('div', 'ba-dlg-cab', h, x), cuerpo);
+    let volver = null;
+    // `sucio()` says whether something was written or chosen: then a press outside does not throw it away.
+    const caja = { d, cuerpo, ocupado: false, alCerrar: null, sucio: () => false };
+    const cerrar = () => {
+      if (d.open && !caja.ocupado) d.close();
+    };
+    x.addEventListener('click', cerrar);
+    d.addEventListener('cancel', (e) => {
+      if (caja.ocupado) e.preventDefault();
+    });
+    // A press on the dark around it closes it, like Escape.
+    d.addEventListener('pointerdown', (e) => {
+      if (e.target !== d || caja.ocupado || caja.sucio()) return;
+      const r = d.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) cerrar();
+    });
+    d.addEventListener('close', () => {
+      d.remove();
+      caja.alCerrar?.();
+      if (volver?.isConnected) volver.focus();
+    });
+    caja.abrir = (desde) => {
+      volver = desde || document.activeElement;
+      document.body.append(d);
+      d.showModal();
+    };
+    caja.cerrar = cerrar;
+    return caja;
+  };
+  const botones = (...hijos) => con('div', 'dlg-botones ba-dlg-botones', ...hijos);
+  const boton = (clase, texto, tipo = 'button') => {
+    const b = el('button', clase, texto);
+    b.type = tipo;
+    return b;
+  };
+
+  // Report, for a summary or a comment, in a dialog. `cuerpo` is what identifies it in the request; `alListo` gets the
+  // button that opened it once the report went through.
+  const denuncia = (cuerpo, motivos, alListo, de = '') => (desde) => {
+    const caja = dialogo('Denunciar');
     const form = el('form', 'ba-form-chico');
+    serie += 1;
     const id = `baMotivo${serie}`;
     const etiqueta = el('label', '', 'Motivo');
     etiqueta.htmlFor = id;
@@ -221,29 +294,128 @@
       o.value = v;
       motivo.append(o);
     });
-    const enviar = el('button', 'b-sec', 'Enviar denuncia');
-    enviar.type = 'submit';
+    const enviar = boton('b-pri', 'Enviar denuncia', 'submit');
+    const cancelar = boton('b-sec', 'Cancelar');
+    cancelar.addEventListener('click', caja.cerrar);
     const estado = estadoNuevo();
-    form.append(etiqueta, motivo, enviar, estado);
+    if (de) form.append(el('p', 'ba-dlg-de', de));
+    form.append(etiqueta, motivo, botones(enviar, cancelar), estado);
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       enviar.disabled = true;
-      const res = await C.conCuenta('Para denunciar hace falta una cuenta.', () => S.pedir('denunciar', { json: { ...cuerpo, motivo: motivo.value }, cuenta: true }));
-      enviar.disabled = false;
-      if (res.cancelado) return;
+      decir(estado, 'Enviando.');
+      caja.ocupado = true;
+      let res = null;
+      try {
+        res = await C.conCuenta('Para denunciar hace falta una cuenta.', () => S.pedir('denunciar', { json: { ...cuerpo, motivo: motivo.value }, cuenta: true }));
+      } catch (err) {
+        console.error('Denunciar:', err);
+      } finally {
+        enviar.disabled = false;
+        caja.ocupado = false;
+      }
+      if (!res) {
+        decir(estado, 'No se pudo enviar. Probá de nuevo.', true);
+        return;
+      }
+      if (res.cancelado) {
+        decir(estado, '');
+        return;
+      }
       if (res.ok) {
-        const hecho = estadoNuevo();
-        hecho.textContent = 'Denuncia enviada.';
-        hecho.tabIndex = -1;
-        caja.replaceWith(hecho);
-        hecho.focus();
-        alListo?.();
+        caja.cerrar();
+        alListo?.(desde);
         return;
       }
       decir(estado, S.mensaje(res, { ...S.SIN_TEXTO, 400: 'Elegí un motivo de la lista y probá de nuevo.', 404: 'Eso ya no está disponible.', 429: 'Hubo demasiadas denuncias seguidas. Probá de nuevo en un rato.' }), true);
     });
-    caja.append(form);
-    return caja;
+    caja.cuerpo.append(form);
+    caja.abrir(desde);
+    motivo.focus();
+  };
+
+  // The «⋯» of a card: what is not read, liked or sent. `opciones()` is asked each time it opens, so it follows the
+  // session. Arrows move, Escape closes and gives the focus back, and a press anywhere else closes it.
+  const menuMas = (titulo, opciones) => {
+    serie += 1;
+    const caja = el('div', 'ba-menu-caja');
+    const b = el('button', 'ba-menu-b');
+    b.type = 'button';
+    b.id = `baMenuB${serie}`;
+    b.setAttribute('aria-haspopup', 'menu');
+    b.setAttribute('aria-expanded', 'false');
+    b.setAttribute('aria-label', `Más opciones de ${titulo}`);
+    b.append(trazo(PUNTOS));
+    const lista2 = el('ul', 'ba-menu');
+    lista2.id = `baMenu${serie}`;
+    lista2.setAttribute('role', 'menu');
+    lista2.setAttribute('aria-labelledby', b.id);
+    lista2.hidden = true;
+    b.setAttribute('aria-controls', lista2.id);
+    caja.append(b, lista2);
+    const items = () => [...lista2.querySelectorAll('[role="menuitem"]')];
+    const fuera = (e) => {
+      if (!caja.contains(e.target)) cerrar(false);
+    };
+    function cerrar(enfocar) {
+      if (lista2.hidden) return;
+      lista2.hidden = true;
+      b.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', fuera, true);
+      if (enfocar) b.focus();
+    }
+    const abrir = (cual) => {
+      lista2.replaceChildren(...opciones().map((o) => {
+        const li = el('li');
+        li.setAttribute('role', 'none');
+        const x = o.href ? el('a', 'ba-menu-op', o.texto) : boton('ba-menu-op', o.texto);
+        if (o.href) x.href = o.href;
+        x.setAttribute('role', 'menuitem');
+        x.tabIndex = -1;
+        if (o.peligro) x.dataset.peligro = '1';
+        x.addEventListener('click', (e) => {
+          // A link goes on its way with the menu closed.
+          if (o.href) {
+            cerrar(false);
+            return;
+          }
+          e.preventDefault();
+          cerrar(true);
+          o.accion(b);
+        });
+        li.append(x);
+        return li;
+      }));
+      lista2.hidden = false;
+      b.setAttribute('aria-expanded', 'true');
+      // Near the foot of the screen it opens upwards.
+      lista2.classList.toggle('ba-menu-arriba', b.getBoundingClientRect().bottom + lista2.offsetHeight + 12 > window.innerHeight);
+      document.addEventListener('pointerdown', fuera, true);
+      const todos = items();
+      todos[cual === 'ultimo' ? todos.length - 1 : 0]?.focus();
+    };
+    b.addEventListener('click', () => (lista2.hidden ? abrir() : cerrar(false)));
+    b.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        abrir(e.key === 'ArrowUp' ? 'ultimo' : 'primero');
+      }
+    });
+    lista2.addEventListener('keydown', (e) => {
+      const todos = items();
+      const i = todos.indexOf(document.activeElement);
+      const ir = (n) => todos[(n + todos.length) % todos.length]?.focus();
+      if (e.key === 'ArrowDown') ir(i + 1);
+      else if (e.key === 'ArrowUp') ir(i - 1);
+      else if (e.key === 'Home') ir(0);
+      else if (e.key === 'End') ir(todos.length - 1);
+      else if (e.key === 'Escape') cerrar(true);
+      else if (e.key === 'Tab') cerrar(true);
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    return { caja, cerrar };
   };
 
   // Comments of one summary. They load the first time the section opens.
@@ -252,12 +424,28 @@
     if (fMateria.value || fInstancia.value) S.refrescar('banco');
   };
 
+  // A panel under the card, opened from its «⋯». It loads the first time it opens.
   const comentarios = (r, sumarCantidad) => {
-    const caja = el('details', 'ba-mas ba-comentarios');
-    const resumen = el('summary');
+    serie += 1;
+    const caja = el('section', 'ba-comentarios');
+    caja.hidden = true;
+    const resumen = el('h4', 'ba-com-titulo');
+    resumen.id = `baComT${serie}`;
+    resumen.tabIndex = -1;
+    caja.setAttribute('aria-labelledby', resumen.id);
+    const bCerrarCom = boton('b-sec b-chico', 'Cerrar');
+    bCerrarCom.setAttribute('aria-label', 'Cerrar comentarios');
     let cantidad = Number(r.comentarios) || 0;
+    // The button in the card's row opens and closes the panel.
+    const bCom = boton('ba-com-b');
+    bCom.setAttribute('aria-expanded', 'false');
+    caja.id = `baCom${serie}`;
+    bCom.setAttribute('aria-controls', caja.id);
     const titulo = () => {
-      resumen.textContent = cantidad ? `Comentarios (${cantidad})` : 'Comentarios';
+      const t = cantidad ? `Comentarios (${cantidad})` : 'Comentarios';
+      resumen.textContent = t;
+      bCom.textContent = t;
+      bCom.setAttribute('aria-label', `${t}, ${r.titulo}`);
     };
     titulo();
     const lista2 = el('ul', 'ba-com-lista');
@@ -315,7 +503,15 @@
           });
           acciones.append(b);
         } else {
-          acciones.append(denuncia({ comentario: c.id }, ['datos-personales', 'ofensivo', 'derechos']));
+          const b = boton('ba-enlace', 'Denunciar');
+          b.setAttribute('aria-label', `Denunciar el comentario de ${c.usuario || 'anónimo'}`);
+          b.addEventListener('click', () => denuncia({ comentario: c.id }, ['datos-personales', 'ofensivo', 'derechos'], () => {
+            const hecho = el('span', 'es-estado', 'Denuncia enviada.');
+            hecho.tabIndex = -1;
+            b.replaceWith(hecho);
+            hecho.focus();
+          }, `El comentario de ${c.usuario || 'anónimo'}.`)(b));
+          acciones.append(b);
         }
         li.replaceChildren(cab, el('p', 'ba-com-texto', c.texto), acciones, estado);
       };
@@ -402,116 +598,294 @@
       lista2.replaceChildren();
       decir(cargando, `No se pudieron cargar los comentarios. ${S.mensaje(res, { 404: YA_NO })}`, true);
     };
-    caja.addEventListener('toggle', () => {
-      if (caja.open && !datos) cargar();
-    });
-    caja.append(resumen, cargando, lista2, form);
-    caja.alCambiarSesion = () => {
-      if (datos) pintarLista();
+    const cerrarCom = () => {
+      caja.hidden = true;
+      bCom.setAttribute('aria-expanded', 'false');
+      bCom.focus();
     };
-    return caja;
+    bCom.addEventListener('click', () => {
+      if (!caja.hidden) {
+        cerrarCom();
+        return;
+      }
+      caja.hidden = false;
+      bCom.setAttribute('aria-expanded', 'true');
+      resumen.focus({ preventScroll: true });
+      caja.scrollIntoView({ block: 'nearest' });
+      if (!datos) cargar();
+    });
+    bCerrarCom.addEventListener('click', cerrarCom);
+    caja.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !e.target.closest('select, textarea')) cerrarCom();
+    });
+    caja.append(con('div', 'ba-com-cabeza', resumen, bCerrarCom), cargando, lista2, form);
+    return {
+      caja,
+      boton: bCom,
+      alCambiarSesion: () => {
+        if (datos) pintarLista();
+      },
+    };
   };
 
-  // A new version, only for whoever uploaded the summary.
-  const nuevaVersion = (r) => {
-    serie += 1;
-    const caja = el('details', 'ba-mas');
-    caja.append(el('summary', '', 'Subir una versión nueva'));
-    const form = el('form', 'ba-form-chico');
-    form.noValidate = true;
-    const aId = `baVersion${serie}`;
-    const nId = `baNota${serie}`;
-    const nombreOrigen = `baOrigen${serie}`;
-    const opcionOrigen = (valor, texto, marcada) => {
-      const l = el('label', 'ba-casilla');
-      const i = el('input');
-      i.type = 'radio';
-      i.name = nombreOrigen;
-      i.value = valor;
-      i.checked = marcada;
-      l.append(i, el('span', '', texto));
-      return l;
-    };
-    const origen = el('fieldset', 'ba-origen');
-    origen.append(el('legend', '', 'Qué vas a subir'), opcionOrigen('archivo', 'Un archivo', true), opcionOrigen('enlace', 'Un enlace de Google', false));
-    const conEnlace = () => form.elements[nombreOrigen].value === 'enlace';
-    const eId = `baVersionEnlace${serie}`;
-    const eEt = el('label', '', 'Enlace de Google Docs o Google Slides');
-    eEt.htmlFor = eId;
-    const enlace = el('input');
-    enlace.type = 'url';
-    enlace.id = eId;
-    enlace.autocomplete = 'off';
-    const aEt = el('label', '', 'Archivo. PDF, Word .docx o PowerPoint .pptx hasta 15 MB, HTML hasta 5 MB');
-    aEt.htmlFor = aId;
-    const archivo = el('input');
+  // The one place to drop a file or paste a Google link, for a new summary and for a new version. Choosing one empties
+  // the other. Once there is a file, the place shows it with its cover and, for an HTML, how it will look in the bank.
+  // The file field stays in the page the whole time, so the keyboard focus never falls off when the place changes.
+  const ARRIBA = 'M12 16V4M7 9l5-5 5 5M4 15v5h16v-5';
+  const tituloDeArchivo = (nombre) => String(nombre || '').replace(/\.[a-z0-9]{1,5}$/i, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const hasta120 = (t) => [...t].slice(0, 120).join('');
+  const zonaSubida = (id, { titulo = () => '', instancia = () => '', materia = () => '' } = {}) => {
+    const caja = el('div', 'su-zona');
+    caja.dataset.estado = 'vacia';
+    const archivo = el('input', 'su-archivo');
     archivo.type = 'file';
     archivo.accept = ACEPTA;
-    archivo.id = aId;
+    archivo.id = `${id}Archivo`;
+    const enlace = el('input', 'su-enlace');
+    enlace.type = 'url';
+    enlace.id = `${id}Enlace`;
+    enlace.autocomplete = 'off';
+    enlace.inputMode = 'url';
+    enlace.placeholder = 'https://docs.google.com/document/d/...';
+    const ayuda = el('p', 'ba-ayuda su-zona-ayuda', 'PDF, Word .docx o PowerPoint .pptx hasta 15 MB. HTML hasta 5 MB. Los .doc y .ppt no entran. Guardalos como .docx, .pptx o PDF.');
+    ayuda.id = `${id}Ayuda`;
+    const error = el('p', 'ba-error');
+    error.id = `${id}Error`;
+    error.setAttribute('aria-live', 'polite');
+    const voz = el('p', 'vh');
+    voz.setAttribute('role', 'status');
+    archivo.setAttribute('aria-describedby', `${ayuda.id} ${error.id}`);
+    enlace.setAttribute('aria-describedby', `${error.id} ${id}Google`);
+
+    // Empty: drop it here or pick it, or paste the link.
+    const elegir = el('label', 'b-pri su-elegir', 'Elegir archivo');
+    elegir.htmlFor = archivo.id;
+    elegir.setAttribute('aria-hidden', 'true');
+    const enlaceEt = el('label', 'su-enlace-et', 'O pegá el enlace de un Google Docs o un Google Slides');
+    enlaceEt.htmlFor = enlace.id;
+    const vacia = con('div', 'su-vacia',
+      con('div', 'su-soltar', trazo(ARRIBA, 'su-flecha'), el('p', 'su-soltar-t', 'Soltá el archivo acá'), elegir),
+      con('div', 'su-pegar', enlaceEt, enlace));
+    const googleOk = el('p', 'ba-ayuda su-google', 'Tiene que poder verlo cualquiera que tenga el enlace. El documento vive en Google y su dueño lo puede cambiar después.');
+    googleOk.hidden = true;
+    googleOk.id = `${id}Google`;
+
+    // With a file: its cover, its name and weight, and two ways out.
+    const tapa = el('div', 'ba-hoja su-tapa');
+    tapa.setAttribute('aria-hidden', 'true');
+    const tapaInst = el('p', 'ba-hoja-instancia');
+    const tapaTitulo = el('p', 'ba-hoja-titulo');
+    const tapaMateria = el('p', 'ba-hoja-materia');
+    tapa.append(con('div', 'ba-hoja-cara', con('div', 'ba-hoja-pag', con('div', 'ba-hoja-escala', tapaInst, tapaTitulo, tapaMateria))));
+    tapa.dataset.estado = 'caratula';
+    const nombre = el('p', 'su-nombre');
+    const datosArchivo = el('p', 'su-datos');
+    const cambiar = el('label', 'b-sec b-chico su-cambiar', 'Cambiar');
+    cambiar.htmlFor = archivo.id;
+    cambiar.setAttribute('aria-hidden', 'true');
+    const sacar = boton('b-sec b-chico', 'Sacar');
+    sacar.setAttribute('aria-label', 'Sacar el archivo');
+    const ficha = con('div', 'su-ficha', tapa, con('div', 'su-ficha-texto', nombre, datosArchivo, con('div', 'su-ficha-botones', cambiar, sacar)));
+    ficha.hidden = true;
+    const previa = previaHtml(archivo, null);
+
+    caja.append(archivo, vacia, ficha, googleOk);
+    const todo = con('div', 'su-zona-campo', caja, error, ayuda, previa, voz);
+
+    const pintarTapa = () => {
+      tapaInst.textContent = instancia() || ' ';
+      tapaTitulo.textContent = titulo() || nombre.textContent;
+      tapaMateria.textContent = materia() || ' ';
+    };
+    const marcarError = (texto) => {
+      error.textContent = texto;
+      [archivo, enlace].forEach((c) => {
+        if (texto) c.setAttribute('aria-invalid', 'true');
+        else c.removeAttribute('aria-invalid');
+      });
+      caja.toggleAttribute('data-error', Boolean(texto));
+    };
+    const pintar = () => {
+      const f = archivo.files[0];
+      caja.dataset.estado = f ? 'archivo' : enlace.value.trim() ? 'enlace' : 'vacia';
+      vacia.hidden = Boolean(f);
+      ficha.hidden = !f;
+      archivo.setAttribute('aria-label', f ? `Cambiar el archivo, ahora ${f.name}` : 'Elegir archivo');
+      if (f) {
+        const ext = /\.([a-z0-9]+)$/i.exec(f.name)?.[1].toLowerCase() || '';
+        const formato = FORMATOS[ext === 'htm' ? 'html' : ext];
+        nombre.textContent = f.name;
+        datosArchivo.textContent = [formato?.nombre, peso(f.size)].filter(Boolean).join(', ');
+        pintarTapa();
+      }
+      googleOk.hidden = Boolean(f) || !ENLACE_GOOGLE.test(enlace.value.trim());
+    };
+    const alCambiar = new Set();
+    const avisar = () => alCambiar.forEach((fn) => fn());
+    archivo.addEventListener('change', () => {
+      marcarError('');
+      if (archivo.files[0]) {
+        enlace.value = '';
+        voz.textContent = `Elegiste ${archivo.files[0].name}.`;
+      }
+      pintar();
+      avisar();
+    });
+    enlace.addEventListener('input', () => {
+      marcarError('');
+      pintar();
+      avisar();
+    });
+    sacar.addEventListener('click', () => {
+      archivo.value = '';
+      archivo.dispatchEvent(new Event('change'));
+      voz.textContent = 'Se sacó el archivo.';
+      archivo.focus();
+    });
+
+    // Dragging over the place lights it; a file dropped there is chosen, a link dropped there is pasted.
+    let dentro = 0;
+    caja.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dentro += 1;
+      caja.dataset.arrastre = '1';
+    });
+    caja.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    });
+    caja.addEventListener('dragleave', () => {
+      dentro = Math.max(0, dentro - 1);
+      if (!dentro) delete caja.dataset.arrastre;
+    });
+    caja.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dentro = 0;
+      delete caja.dataset.arrastre;
+      const dt = e.dataTransfer;
+      const f = dt?.files?.[0];
+      if (f) {
+        const uno = new DataTransfer();
+        uno.items.add(f);
+        archivo.files = uno.files;
+        archivo.dispatchEvent(new Event('change'));
+        return;
+      }
+      const texto = (dt?.getData('text/uri-list') || dt?.getData('text/plain') || '').split(/\s+/)[0];
+      if (texto) {
+        archivo.value = '';
+        enlace.value = texto;
+        enlace.dispatchEvent(new Event('input'));
+        archivo.dispatchEvent(new Event('change'));
+        enlace.focus();
+      }
+    });
+
+    const origen = () => (archivo.files[0] ? 'archivo' : enlace.value.trim() ? 'enlace' : '');
+    const revisar = async () => {
+      if (origen() === 'enlace') return revisarEnlace(enlace.value.trim());
+      if (!archivo.files[0]) return 'Elegí el archivo o pegá el enlace.';
+      return revisarArchivo(archivo.files[0]);
+    };
+    const enfocar = () => (origen() === 'enlace' ? enlace : archivo).focus();
+    const limpiar = () => {
+      archivo.value = '';
+      enlace.value = '';
+      marcarError('');
+      archivo.dispatchEvent(new Event('change'));
+    };
+    // The name of the file, as the summary's title, while the title is empty or still the one it put.
+    let puesto = '';
+    const tituloSugerido = (actual) => {
+      const f = archivo.files[0];
+      if (!f || (actual.trim() && actual !== puesto)) return null;
+      puesto = hasta120(tituloDeArchivo(f.name));
+      return puesto;
+    };
+    pintar();
+    return { todo, caja, archivo, enlace, error, origen, revisar, enfocar, limpiar, marcarError, pintarTapa, tituloSugerido, alCambiar: (fn) => alCambiar.add(fn), avisar };
+  };
+
+  // A new version, only for whoever uploaded the summary, in a dialog with the same place to drop a file or paste a
+  // link. `alListo(estado)` gets what the service answered: «publicado», or the new version waits for review.
+  const abrirVersion = (r, desde, alListo) => {
+    const caja = dialogo('Subir una versión nueva', 'dlg-ancho');
+    serie += 1;
+    const form = el('form', 'ba-form-version');
+    form.noValidate = true;
+    caja.cuerpo.append(el('p', 'ba-dlg-de', r.titulo));
+    const zona = zonaSubida(`baVer${serie}`, { titulo: () => r.titulo, instancia: () => nombreInstancia(r.instancia), materia: () => nombreMateria(r.materia) });
+    const nId = `baNota${serie}`;
     const nEt = el('label', '', 'Qué cambió, si querés contarlo');
     nEt.htmlFor = nId;
     const nota = el('input');
     nota.type = 'text';
     nota.id = nId;
     nota.maxLength = 200;
-    const enviar = el('button', 'b-sec', 'Subir versión');
-    enviar.type = 'submit';
+    nota.autocomplete = 'off';
+    nota.placeholder = 'Por ejemplo: sumé los ejercicios del segundo parcial';
+    const enviar = boton('b-pri', 'Subir versión', 'submit');
+    const cancelar = boton('b-sec', 'Cancelar');
+    cancelar.addEventListener('click', caja.cerrar);
     const estado = estadoNuevo();
-    const pintarOrigen = () => {
-      const e = conEnlace();
-      [aEt, archivo].forEach((x) => {
-        x.hidden = e;
-      });
-      [eEt, enlace].forEach((x) => {
-        x.hidden = !e;
-      });
-      if (e) previa.hidden = true;
-      else if (archivo.files[0]) archivo.dispatchEvent(new Event('change'));
-    };
-    const previa = previaHtml(archivo, form);
-    origen.addEventListener('change', pintarOrigen);
-    form.append(origen, aEt, archivo, previa, eEt, enlace, nEt, nota, enviar, estado);
-    pintarOrigen();
+    form.append(zona.todo, con('div', 'ba-campo', nEt, nota), botones(enviar, cancelar), estado);
+    caja.cuerpo.append(form);
+    caja.sucio = () => Boolean(zona.origen() || nota.value.trim());
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const porEnlace = conEnlace();
-      const err = porEnlace ? revisarEnlace(enlace.value.trim()) : await revisarArchivo(archivo.files[0]);
+      if (caja.ocupado) return;
+      const porEnlace = zona.origen() === 'enlace';
+      const err = await zona.revisar();
       if (err) {
-        decir(estado, err, true);
-        (porEnlace ? enlace : archivo).focus();
+        zona.marcarError(err);
+        zona.enfocar();
         return;
       }
       decir(estado, 'Subiendo.');
       enviar.disabled = true;
+      caja.ocupado = true;
       const pedir = () => {
         const fd = new FormData();
         fd.set('id', r.id);
-        if (porEnlace) fd.set('enlace', enlace.value.trim());
-        else fd.set('archivo', archivo.files[0]);
+        if (porEnlace) fd.set('enlace', zona.enlace.value.trim());
+        else fd.set('archivo', zona.archivo.files[0]);
         if (nota.value.trim()) fd.set('nota', nota.value.trim());
         return S.pedir('actualizar', { form: fd, cuenta: true, espera: 180000 });
       };
-      const res = await C.conCuenta('Para subir una versión hace falta una cuenta.', pedir);
-      enviar.disabled = false;
+      // Even a failure of this page gives the button and the dialog back.
+      let res;
+      try {
+        res = await C.conCuenta('Para subir una versión hace falta una cuenta.', pedir);
+      } catch (err) {
+        console.error('Versión:', err);
+        res = null;
+      } finally {
+        enviar.disabled = false;
+        caja.ocupado = false;
+      }
+      if (!res) {
+        decir(estado, 'No se pudo subir. Probá de nuevo.', true);
+        return;
+      }
       if (res.cancelado) {
         decir(estado, '');
         return;
       }
       if (res.ok) {
-        if (res.datos?.estado === 'publicado') {
-          decir(aviso, 'La versión nueva ya está publicada.');
-          cargarLista();
-          return;
-        }
-        form.reset();
-        pintarOrigen();
-        decir(estado, 'Recibimos la versión nueva. La anterior sigue visible hasta que la revisemos.');
+        caja.cerrar();
+        alListo?.(res.datos?.estado === 'publicado' ? 'publicado' : 'pendiente');
         return;
       }
-      decir(estado, rechazoDe(res, porEnlace) || S.mensaje(res, { 400: 'Revisá lo que subiste. No es un formato que entre.', 403: 'Solo quien subió el resumen puede actualizarlo.', 404: YA_NO, 429: 'Se llegó al tope de subidas de hoy. Probá de nuevo mañana.' }), true);
+      const rechazo = rechazoDe(res, porEnlace);
+      const texto = rechazo || S.mensaje(res, { 400: 'Ese formato no entra.', 403: 'Solo quien subió el resumen puede actualizarlo.', 404: YA_NO, 413: RECHAZOS['demasiado-grande'], 429: 'Se llegó al tope de subidas de hoy. Probá de nuevo mañana.' });
+      if (rechazo || res.status === 413 || res.status === 400) {
+        decir(estado, '');
+        zona.marcarError(texto);
+        zona.enfocar();
+      } else decir(estado, texto, true);
     });
-    caja.append(form);
-    return caja;
+    caja.abrir(desde);
+    zona.archivo.focus();
   };
 
   // An HTML whose scripts the panel turned on is read from another address, made only for this, inside a frame that
@@ -586,7 +960,7 @@
       const espera = con('div', 'ba-lector', esq('', 'esq-bloque ba-esq-marco'), esq('4.3rem', 'esq-boton esq-chico'));
       [...espera.children].forEach((x) => x.setAttribute('aria-hidden', 'true'));
       espera.setAttribute('aria-busy', 'true');
-      li.querySelector('.ba-pie').before(espera);
+      li.querySelector('.ba-abierto').append(espera);
       const res = await leerHtml(r);
       cargando = false;
       b.removeAttribute('aria-disabled');
@@ -780,7 +1154,7 @@
     const poner = (caja) => {
       caja.id = id;
       if (abierta) abierta.replaceWith(caja);
-      else li.querySelector('.ba-pie').before(caja);
+      else li.querySelector('.ba-abierto').append(caja);
       abierta = caja;
       rotular(true);
     };
@@ -854,7 +1228,7 @@
 
   const metaDe = (r) => {
     const partes = [];
-    if (!fMateria.value) partes.push(`${opcion(fMateria, r.materia)}.`);
+    if (!fMateria?.value) partes.push(`${nombreMateria(r.materia)}.`);
     partes.push(`De ${r.autor || 'anónimo'}.`);
     const version = Number(r.version) || 1;
     const creado = fecha(r.creado);
@@ -875,7 +1249,6 @@
 
   // A summary only collects likes, so nobody sees a low score. A filled heart against an outlined one, and the button
   // says whether it is pressed, so colour is never the only difference.
-  const SVG = 'http://www.w3.org/2000/svg';
   const CORAZON = 'M12 20.4l-1.35-1.23C5.85 14.82 2.7 11.97 2.7 8.48 2.7 5.63 4.93 3.4 7.78 3.4c1.6 0 3.15.75 4.22 1.93A5.7 5.7 0 0 1 16.22 3.4c2.85 0 5.08 2.23 5.08 5.08 0 3.49-3.15 6.34-7.95 10.7z';
   const corazon = () => {
     const svg = document.createElementNS(SVG, 'svg');
@@ -1121,7 +1494,7 @@
     const hoja = el('div', 'ba-hoja');
     hoja.dataset.estado = 'caratula';
     const caratula = con('div', 'ba-hoja-pag',
-      con('div', 'ba-hoja-escala', el('p', 'ba-hoja-instancia', opcion(fInstancia, r.instancia)), el('p', 'ba-hoja-titulo', r.titulo), el('p', 'ba-hoja-materia', opcion(fMateria, r.materia))));
+      con('div', 'ba-hoja-escala', el('p', 'ba-hoja-instancia', nombreInstancia(r.instancia)), el('p', 'ba-hoja-titulo', r.titulo), el('p', 'ba-hoja-materia', nombreMateria(r.materia))));
     caratula.setAttribute('aria-hidden', 'true');
     const cara = con('div', 'ba-hoja-cara', caratula);
     hoja.append(cara);
@@ -1170,7 +1543,7 @@
     const textoBox = el('div', 'ba-texto');
     const etiquetas = el('p', 'ba-etiquetas');
     if (FORMATOS[formato]) etiquetas.append(el('span', 'ba-formato', `${FORMATOS[formato].nombre}${formato === 'html' && r.js ? ' interactivo' : ''}`));
-    etiquetas.append(el('span', 'ba-instancia', opcion(fInstancia, r.instancia)));
+    etiquetas.append(el('span', 'ba-instancia', nombreInstancia(r.instancia)));
     const reco = Number(r.recomendado) || 0;
     if (reco) etiquetas.append(el('span', 'ba-reco', reco === 1 ? 'Lo recomienda 1 consejo' : `Lo recomiendan ${reco} consejos`));
     li.id = `r-${r.id}`;
@@ -1180,7 +1553,7 @@
     const fragmento = el('p', 'ba-fragmento');
     fragmento.hidden = true;
     li.pintarFragmento = (f) => pintarFragmento(fragmento, f);
-    // The sheet floats beside the title, under the labels, which keep the whole width.
+    // The sheet floats beside the title on a phone. On a wide screen it sits in the card's corner (carrera.css).
     textoBox.append(etiquetas, hojaDe(r), el('h3', 'ba-titulo', r.titulo));
     if (temas.length) {
       const ul = el('ul', 'ba-temas-r');
@@ -1189,48 +1562,73 @@
       textoBox.append(ul);
     }
     textoBox.append(el('p', 'ba-meta', metaDe(r)), fragmento, gusta.estado);
+    // In sight: read (or download, or open in Google), the like on the left and Super CVG. The rest goes in «⋯».
     const acciones = el('div', 'ba-acciones');
-    let principal;
-    if (formatoDe(r.tipo) === 'html') {
+    // What a press has to say (a download's warning, a report sent, an error) goes in one line under the buttons.
+    const avisos = el('div', 'ba-avisos');
+    const nota = el('p', 'ba-aviso-bajar');
+    nota.hidden = true;
+    const avisar = (texto) => {
+      nota.textContent = texto;
+      nota.hidden = !texto;
+    };
+    const principal = [];
+    const enMenu = [];
+    if (formato === 'html') {
       const leer = botonLeer(r, li);
       const bajarHtml = botonBajarHtml(r);
-      principal = [leer.b, bajarHtml.b, leer.estado, bajarHtml.estado];
-    } else if (['gdoc', 'gslides'].includes(formatoDe(r.tipo))) {
+      principal.push(leer.b);
+      avisos.append(leer.estado, bajarHtml.estado);
+      enMenu.push({ texto: 'Bajar el archivo', accion: () => bajarHtml.b.click() });
+    } else if (['gdoc', 'gslides'].includes(formato)) {
       // It lives on Google: another tab, no referrer, and never inside this page.
       const abrir = el('a', 'b-pri ba-bajar', 'Abrir en Google');
       abrir.href = S.url('bajar', { id: r.id });
       abrir.target = '_blank';
       abrir.rel = 'noopener noreferrer nofollow';
       abrir.setAttribute('aria-label', `Abrir ${r.titulo} en Google, en otra pestaña`);
-      principal = [abrir, el('p', 'ba-aviso-bajar', AVISO_GOOGLE)];
+      abrir.addEventListener('click', () => avisar(AVISO_GOOGLE));
+      principal.push(abrir);
     } else {
       const bajar = el('a', 'b-pri ba-bajar', 'Bajar');
       bajar.href = S.url('bajar', { id: r.id });
       bajar.setAttribute('aria-label', `Bajar ${r.titulo}`);
       bajar.rel = 'nofollow';
-      principal = [bajar];
+      // The warning shows when it matters: right as the file comes down, before it gets opened.
+      if (AVISOS_BAJAR[formato]) bajar.addEventListener('click', () => avisar(AVISOS_BAJAR[formato]));
+      principal.push(bajar);
       if (formato === 'docx' || formato === 'pptx') {
         const vista = botonVista(r, li);
-        principal.push(vista.b, vista.estado);
+        principal.push(vista.b);
+        avisos.append(vista.estado);
       }
-      if (AVISOS_BAJAR[formato]) principal.push(el('p', 'ba-aviso-bajar', AVISOS_BAJAR[formato]));
     }
-    const denunciar = denuncia({ id: r.id }, Object.keys(MOTIVOS));
     const com = comentarios(r);
-    const version = nuevaVersion(r);
+    principal.push(com.boton);
     const cvg = botonCvg(r);
-    acciones.append(...principal, cvg.caja);
-    const pie = el('div', 'ba-pie');
-    pie.append(com, denunciar, version);
-    const pintarDueno = () => {
-      version.hidden = !S.usuario() || S.usuario() !== r.autor;
-    };
-    pintarDueno();
+    let denunciado = false;
+    // One's own summary is edited, never reported.
+    const propio = () => Boolean(S.usuario()) && S.usuario() === r.autor;
+    const menu = menuMas(r.titulo, () => [
+      ...enMenu,
+      ...(propio() ? [{ texto: 'Editar en Mis resúmenes', href: `mis-resumenes.html#m-${encodeURIComponent(r.id)}` }] : []),
+      ...(denunciado || propio() ? [] : [{
+        texto: 'Denunciar',
+        peligro: true,
+        accion: denuncia({ id: r.id }, Object.keys(MOTIVOS), () => {
+          denunciado = true;
+          avisar('Denuncia enviada.');
+        }, r.titulo),
+      }]),
+    ]);
+    acciones.append(...principal, cvg.caja, menu.caja);
+    avisos.prepend(nota);
+    const abierto = el('div', 'ba-abierto');
     // The like sits on the left of the sheet (carrera.css) but comes after the title, which is what a screen reader
     // should hear first.
-    li.append(textoBox, gusta.caja, acciones, pie);
+    li.append(textoBox, gusta.caja, acciones, avisos, abierto, com.caja);
     li.alCambiarSesion = () => {
-      pintarDueno();
+      menu.cerrar(false);
       com.alCambiarSesion();
       cvg.alCambiarSesion();
     };
@@ -1554,33 +1952,143 @@
     cargarLista();
   }
 
+  // Tags, up to 8 of up to 30 characters, written one by one into a box of chips. For a new summary and for editing one.
+  // What is typed goes in with Enter or a comma, and leaving the field keeps it. Backspace on an empty field takes the
+  // last one out.
+  const editorTemas = ({ input, chips, voz }) => {
+    let temas = [];
+    const decirTema = (t) => {
+      voz.textContent = t;
+    };
+    const pintarTemas = () => {
+      chips.replaceChildren(...temas.map((t, i) => {
+        const li = el('li', 'cr-chip');
+        const sacar = el('button', 'cr-chip-x', '×');
+        sacar.type = 'button';
+        sacar.setAttribute('aria-label', `Sacar la etiqueta ${t}`);
+        sacar.addEventListener('click', () => {
+          temas.splice(i, 1);
+          pintarTemas();
+          input.focus();
+          decirTema(`Se sacó la etiqueta ${t}.`);
+        });
+        li.append(el('span', '', t), sacar);
+        return li;
+      }));
+      chips.hidden = !temas.length;
+      input.disabled = temas.length >= MAX_TEMAS;
+      input.placeholder = input.disabled ? 'Ya tiene 8' : 'Por ejemplo: Parcial 1';
+    };
+    // Adds the ones that fit and are not there yet, and says which.
+    const sumarTemas = (nuevas) => {
+      const sumadas = [];
+      for (const t of nuevas.map(limpiarTema).filter(Boolean)) {
+        if (temas.length >= MAX_TEMAS) break;
+        if (temas.some((x) => claveTema(x) === claveTema(t))) continue;
+        temas.push(t);
+        sumadas.push(t);
+      }
+      return sumadas;
+    };
+    const cuantasTemas = (n) => (n === 1 ? '1 etiqueta' : `${n} etiquetas`);
+    const sumarEscrito = (enfocar) => {
+      const sumadas = sumarTemas(input.value.split(','));
+      input.value = '';
+      if (!sumadas.length) return;
+      pintarTemas();
+      decirTema(sumadas.length === 1 ? `Se sumó la etiqueta ${sumadas[0]}.` : `Se sumaron ${cuantasTemas(sumadas.length)}.`);
+      if (!enfocar) return;
+      if (input.disabled) chips.querySelector('li:last-child .cr-chip-x')?.focus();
+      else input.focus();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.isComposing) return;
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        sumarEscrito(true);
+      } else if (e.key === 'Backspace' && !input.value && temas.length) {
+        const t = temas.pop();
+        pintarTemas();
+        decirTema(`Se sacó la etiqueta ${t}.`);
+      }
+    });
+    input.addEventListener('blur', () => sumarEscrito(false));
+    pintarTemas();
+    return {
+      lista: () => [...temas],
+      poner: (nuevas) => {
+        temas = [];
+        sumarTemas(nuevas);
+        pintarTemas();
+      },
+      sacar: (claves) => {
+        temas = temas.filter((t) => !claves.includes(claveTema(t)));
+      },
+      sumarTemas,
+      pintarTemas,
+      sumarEscrito,
+      decirTema,
+      cuantasTemas,
+      // With 8 tags the field is off and can't take the focus: it goes to the last tag's button.
+      enfocable: () => (input.disabled ? chips.querySelector('li:last-child .cr-chip-x') ?? input : input),
+    };
+  };
+  // The field with its chips, for a dialog. `id` names the input; its error goes in `${id}Error`.
+  const campoTemas = (id, ayudaTexto = 'Escribí una y tocá Enter, hasta 8.') => {
+    const input = el('input');
+    input.type = 'text';
+    input.id = id;
+    input.maxLength = 30;
+    input.autocomplete = 'off';
+    input.enterKeyHint = 'done';
+    const chips = el('ul', 'cr-chips-l');
+    chips.setAttribute('aria-label', 'Etiquetas puestas');
+    const voz = el('p', 'vh');
+    voz.setAttribute('role', 'status');
+    const ayuda = el('p', 'c-ayuda', ayudaTexto);
+    ayuda.id = `${id}Ayuda`;
+    const error = el('p', 'ba-error');
+    error.id = `${id}Error`;
+    error.setAttribute('aria-live', 'polite');
+    input.setAttribute('aria-describedby', `${ayuda.id} ${error.id}`);
+    const et = el('label', '', 'Etiquetas');
+    et.htmlFor = id;
+    const caja = con('div', 'ba-campo cr-etiquetas su-etiquetas', et, con('div', 'cr-chips', chips, input), ayuda, error, voz);
+    return { caja, input, editor: editorTemas({ input, chips, voz }) };
+  };
+
+  // For «Mis resúmenes» (mis.js), which shows the same sheets and dialogs.
+  window.UTN_BANCO = {
+    el, con, esq, oculto, decir, estadoNuevo, boton, botones, dialogo, hojaDe, hojaEsq, peso, fecha, formatoDe, FORMATOS,
+    nombreMateria, nombreInstancia, sinControles, abrirVersion, campoTemas, YA_NO, MOTIVOS, claveTema,
+  };
+
   // Upload form, on its own page. Mirrors what the server checks, so most errors show up next to their field.
   const form = $('baForm');
   if (!form) return;
   const sMateria = $('suMateria');
   const sInstancia = $('suInstancia');
   const sTitulo = $('suTitulo');
-  const sArchivo = $('suArchivo');
-  const sEnlace = $('suEnlace');
-  const cArchivo = $('suCampoArchivo');
-  const cEnlace = $('suCampoEnlace');
-  cArchivo.append(previaHtml(sArchivo));
-  const subeEnlace = () => form.elements.suOrigen.value === 'enlace';
-  const pintarOrigen = () => {
-    cArchivo.hidden = subeEnlace();
-    cEnlace.hidden = !subeEnlace();
-  };
-  $('suFormatos').addEventListener('change', pintarOrigen);
-  pintarOrigen();
+  const elegida = (sel) => (sel.value ? opcion(sel, sel.value) : '');
+  const zona = zonaSubida('su', { titulo: () => sTitulo.value.trim(), instancia: () => elegida(sInstancia), materia: () => elegida(sMateria) });
+  $('suZona').replaceWith(zona.todo);
+  zona.todo.querySelector('.su-zona').setAttribute('aria-labelledby', 'suZonaRotulo');
+  zona.todo.querySelector('.su-zona').setAttribute('role', 'group');
+  const sArchivo = zona.archivo;
+  const sEnlace = zona.enlace;
+  const subeEnlace = () => zona.origen() === 'enlace';
   const sAcepto = $('suAcepto');
   const bSubir = $('suEnviar');
   const salida = $('suSalida');
   const iTema = $('suEtiqueta');
-  const campos = [sMateria, sInstancia, sTitulo, iTema, sArchivo, sEnlace, sAcepto];
+  const campos = [sMateria, sInstancia, sTitulo, iTema, sAcepto];
   const marcarError = (c, texto) => {
+    if (c === sArchivo || c === sEnlace) {
+      zona.marcarError(texto);
+      return;
+    }
     const p = $(`${c.id}Error`);
     p.textContent = texto;
-    p.hidden = !texto;
     if (texto) c.setAttribute('aria-invalid', 'true');
     else c.removeAttribute('aria-invalid');
   };
@@ -1588,70 +2096,13 @@
     c.addEventListener('input', () => marcarError(c, ''));
     c.addEventListener('change', () => marcarError(c, ''));
   });
+  // The cover in the place follows the title, the subject and the instance as they get written.
+  [sTitulo, sMateria, sInstancia].forEach((c) => c.addEventListener(c === sTitulo ? 'input' : 'change', zona.pintarTapa));
 
-  // Tags, up to 8 of up to 30 characters. A file made with «Armar un resumen» brings its own, and they can be changed.
-  const chipsTema = $('suChips');
-  const vozTema = $('suEtiquetaVoz');
-  let temas = [];
+  // Tags. A file made with «Armar un resumen» brings its own, and they can be changed.
+  const temasSubir = editorTemas({ input: iTema, chips: $('suChips'), voz: $('suEtiquetaVoz') });
   // The keys that came with the chosen file: they give way when another file is chosen, and the typed ones stay.
   let delArchivo = [];
-  const decirTema = (t) => {
-    vozTema.textContent = t;
-  };
-  const pintarTemasSubir = () => {
-    chipsTema.replaceChildren(...temas.map((t, i) => {
-      const li = el('li', 'cr-chip');
-      const sacar = el('button', 'cr-chip-x', '×');
-      sacar.type = 'button';
-      sacar.setAttribute('aria-label', `Sacar la etiqueta ${t}`);
-      sacar.addEventListener('click', () => {
-        temas.splice(i, 1);
-        pintarTemasSubir();
-        iTema.focus();
-        decirTema(`Se sacó la etiqueta ${t}.`);
-      });
-      li.append(el('span', '', t), sacar);
-      return li;
-    }));
-    chipsTema.hidden = !temas.length;
-    iTema.disabled = temas.length >= MAX_TEMAS;
-    iTema.placeholder = iTema.disabled ? 'Ya tiene 8' : 'Por ejemplo: Parcial 1';
-  };
-  // Adds the ones that fit and are not there yet, and says which.
-  const sumarTemas = (nuevas) => {
-    const sumadas = [];
-    for (const t of nuevas.map(limpiarTema).filter(Boolean)) {
-      if (temas.length >= MAX_TEMAS) break;
-      if (temas.some((x) => claveTema(x) === claveTema(t))) continue;
-      temas.push(t);
-      sumadas.push(t);
-    }
-    return sumadas;
-  };
-  const cuantasTemas = (n) => (n === 1 ? '1 etiqueta' : `${n} etiquetas`);
-  // What is typed, split at the commas. With Enter or a comma the focus stays; leaving the field keeps what was typed.
-  const sumarEscrito = (enfocar) => {
-    const sumadas = sumarTemas(iTema.value.split(','));
-    iTema.value = '';
-    if (!sumadas.length) return;
-    pintarTemasSubir();
-    decirTema(sumadas.length === 1 ? `Se sumó la etiqueta ${sumadas[0]}.` : `Se sumaron ${cuantasTemas(sumadas.length)}.`);
-    if (!enfocar) return;
-    if (iTema.disabled) chipsTema.querySelector('li:last-child .cr-chip-x')?.focus();
-    else iTema.focus();
-  };
-  iTema.addEventListener('keydown', (e) => {
-    if (e.isComposing) return;
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      sumarEscrito(true);
-    } else if (e.key === 'Backspace' && !iTema.value && temas.length) {
-      const t = temas.pop();
-      pintarTemasSubir();
-      decirTema(`Se sacó la etiqueta ${t}.`);
-    }
-  });
-  iTema.addEventListener('blur', () => sumarEscrito(false));
   // An HTML lists its tags in `ul.etiquetas`, as «Armar un resumen» writes them. DOMParser runs and loads nothing.
   let vueltaTemas = 0;
   const temasDelArchivo = async () => {
@@ -1668,18 +2119,26 @@
       }
     }
     if (esta !== vueltaTemas) return;
-    temas = temas.filter((t) => !delArchivo.includes(claveTema(t)));
-    const sumadas = sumarTemas(nuevas);
+    temasSubir.sacar(delArchivo);
+    const sumadas = temasSubir.sumarTemas(nuevas);
     delArchivo = sumadas.map(claveTema);
-    pintarTemasSubir();
-    if (sumadas.length) decirTema(`Se ${sumadas.length === 1 ? 'cargó' : 'cargaron'} ${cuantasTemas(sumadas.length)} del archivo.`);
+    temasSubir.pintarTemas();
+    if (sumadas.length) temasSubir.decirTema(`Se ${sumadas.length === 1 ? 'cargó' : 'cargaron'} ${temasSubir.cuantasTemas(sumadas.length)} del archivo.`);
   };
-  sArchivo.addEventListener('change', temasDelArchivo);
+  sArchivo.addEventListener('change', () => {
+    temasDelArchivo();
+    // The file's name becomes the title while the title is empty or still the one it put.
+    const sugerido = zona.tituloSugerido(sTitulo.value);
+    if (sugerido !== null) {
+      sTitulo.value = sugerido;
+      marcarError(sTitulo, '');
+    }
+    zona.pintarTapa();
+  });
   const vaciarTemas = () => {
     vueltaTemas += 1;
-    temas = [];
     delArchivo = [];
-    pintarTemasSubir();
+    temasSubir.poner([]);
   };
   // Coming from a subject's bank, the form starts on that subject.
   const subirConFiltro = () => {
@@ -1692,19 +2151,14 @@
 
   const revisar = async () => {
     const errores = [];
-    if (!sMateria.value) errores.push([sMateria, 'Elegí la materia.']);
-    if (!sInstancia.value) errores.push([sInstancia, 'Elegí la instancia.']);
+    const errZona = await zona.revisar();
+    if (errZona) errores.push([subeEnlace() ? sEnlace : sArchivo, errZona]);
     const t = sTitulo.value.trim();
     if ([...t].length < 3) errores.push([sTitulo, 'El título tiene que tener al menos 3 caracteres.']);
     else if ([...t].length > 120) errores.push([sTitulo, 'El título puede tener hasta 120 caracteres.']);
     else if (!sinControles(t)) errores.push([sTitulo, 'El título tiene caracteres que no se pueden usar.']);
-    if (subeEnlace()) {
-      const errEnlace = revisarEnlace(sEnlace.value.trim());
-      if (errEnlace) errores.push([sEnlace, errEnlace]);
-    } else {
-      const errArchivo = await revisarArchivo(sArchivo.files[0]);
-      if (errArchivo) errores.push([sArchivo, errArchivo]);
-    }
+    if (!sMateria.value) errores.push([sMateria, 'Elegí la materia.']);
+    if (!sInstancia.value) errores.push([sInstancia, 'Elegí la instancia.']);
     if (!sAcepto.checked) errores.push([sAcepto, 'Hace falta que lo confirmes para subirlo.']);
     return errores;
   };
@@ -1717,46 +2171,66 @@
   };
   const CAMPOS_ERROR = { titulo: sTitulo, archivo: sArchivo, 'archivo-rechazado': sArchivo, pdf: sArchivo, multipart: sArchivo, 'muy-grande': sArchivo, materia: sMateria, instancia: sInstancia, acepto: sAcepto, etiquetas: iTema };
   const TEXTOS_ERROR = {
-    titulo: 'El título tiene que tener de 3 a 120 caracteres, sin caracteres raros.',
-    archivo: 'Elegí el archivo.',
+    titulo: 'El título va de 3 a 120 caracteres.',
+    archivo: 'Elegí el archivo o pegá el enlace.',
     pdf: 'Ese archivo no es un PDF.',
     materia: 'Esa materia no está en la lista.',
     instancia: 'Elegí una instancia de la lista.',
     acepto: 'Hace falta que lo confirmes para subirlo.',
-    etiquetas: 'Revisá las etiquetas. Van hasta 8, de hasta 30 caracteres.',
+    etiquetas: 'Hasta 8 etiquetas, de hasta 30 caracteres.',
   };
   const decirSalida = (texto, error) => {
     decir(salida, texto, error);
     salida.hidden = !texto;
   };
+  const enfocarCampo = (c) => {
+    if (c === sArchivo || c === sEnlace) zona.enfocar();
+    else if (c === iTema) temasSubir.enfocable().focus();
+    else c.focus();
+  };
 
+  // Whatever happens on the way, even a failure of this page, the button comes back.
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    decirSalida('');
-    sumarEscrito(false);
-    campos.forEach((c) => marcarError(c, ''));
+    if (bSubir.disabled) return;
     bSubir.disabled = true;
+    try {
+      await enviarSubida();
+    } catch (err) {
+      console.error('Subir:', err);
+      decirSalida('No se pudo subir. Probá de nuevo.', true);
+      salida.focus();
+    } finally {
+      bSubir.disabled = false;
+      bSubir.textContent = 'Subir resumen';
+    }
+  });
+  async function enviarSubida() {
+    decirSalida('');
+    temasSubir.sumarEscrito(false);
+    campos.forEach((c) => marcarError(c, ''));
+    zona.marcarError('');
     const errores = await revisar();
     if (errores.length) {
       errores.forEach(([c, t]) => marcarError(c, t));
-      errores[0][0].focus();
-      bSubir.disabled = false;
+      enfocarCampo(errores[0][0]);
       return;
     }
     bSubir.textContent = 'Subiendo';
+    const temas = temasSubir.lista();
+    const porEnlace = subeEnlace();
     const pedir = () => {
       const datos = new FormData();
       datos.set('materia', sMateria.value);
       datos.set('instancia', sInstancia.value);
       datos.set('titulo', sTitulo.value.trim());
       datos.set('acepto', '1');
-      if (subeEnlace()) datos.set('enlace', sEnlace.value.trim());
+      if (porEnlace) datos.set('enlace', sEnlace.value.trim());
       else datos.set('archivo', sArchivo.files[0]);
       temas.forEach((t) => datos.append('etiqueta', t));
       return S.pedir('subir', { form: datos, cuenta: true, espera: 180000 });
     };
     const r = await C.conCuenta('Para subir un resumen hace falta una cuenta. Lo que completaste queda.', pedir);
-    bSubir.disabled = false;
     bSubir.textContent = 'Subir resumen';
     if (r.cancelado) return;
     if (r.ok) {
@@ -1769,28 +2243,36 @@
         /* Nothing to clean. */
       }
       form.reset();
+      zona.limpiar();
       vaciarTemas();
-      pintarOrigen();
       subirConFiltro();
+      zona.pintarTapa();
       if (sinTemas) decirSalida(publicado ? 'Tu resumen ya está publicado, sin las etiquetas. El banco todavía no las guarda.' : 'Recibimos tu resumen, sin las etiquetas, porque el banco todavía no las guarda. Aparece cuando lo revisemos.');
-      else decirSalida(publicado ? 'Tu resumen ya está publicado. Lo ves en el banco.' : 'Recibimos tu resumen. Queda pendiente hasta que lo revisemos y recién ahí aparece en el banco.');
+      else decirSalida(publicado ? 'Tu resumen ya está en el banco.' : 'Recibimos tu resumen. Aparece en el banco cuando lo revisemos.');
+      const mis = el('a', '', 'Seguilo en Mis resúmenes.');
+      mis.href = 'mis-resumenes.html';
+      salida.append(' ', mis);
       salida.focus();
       return;
     }
-    const campoSubida = subeEnlace() ? sEnlace : sArchivo;
+    const campoSubida = porEnlace ? sEnlace : sArchivo;
     const campo = r.status === 413 ? sArchivo : r.error === 'archivo-rechazado' ? campoSubida : r.status === 400 ? CAMPOS_ERROR[r.error] : null;
-    const texto = rechazoDe(r, subeEnlace()) || TEXTOS_ERROR[r.error] || S.mensaje(r, MENSAJES_SUBIR);
+    const texto = rechazoDe(r, porEnlace) || TEXTOS_ERROR[r.error] || S.mensaje(r, MENSAJES_SUBIR);
     if (campo) {
       marcarError(campo, texto);
-      // With 8 tags the field is off and can't take the focus: it goes to the last tag's button.
-      (campo === iTema && iTema.disabled ? chipsTema.querySelector('li:last-child .cr-chip-x') ?? campo : campo).focus();
+      enfocarCampo(campo);
     } else {
       decirSalida(texto, true);
       salida.focus();
     }
-  });
+  }
 
   subirConFiltro();
+  zona.pintarTapa();
+  // A file dropped beside the place, by mistake, does not open in the tab and leave the form.
+  ['dragover', 'drop'].forEach((t) => window.addEventListener(t, (e) => {
+    if (e.dataTransfer?.types?.includes('Files') && !e.target.closest?.('.su-zona')) e.preventDefault();
+  }));
 
   // The summary maker (crear.html) leaves its file here for this tab, and the form starts with it loaded.
   const irCrear = $('suIrCrear');
@@ -1808,16 +2290,16 @@
       c = null;
     }
     if (!c || typeof c.html !== 'string' || typeof c.nombre !== 'string' || !/^[a-z0-9-]{1,60}\.html$/.test(c.nombre)) return;
+    if (typeof c.titulo === 'string' && c.titulo.trim() && !sTitulo.value) sTitulo.value = hasta120(c.titulo.trim());
     try {
       const dt = new DataTransfer();
       dt.items.add(new File([c.html], c.nombre, { type: 'text/html' }));
       sArchivo.files = dt.files;
-      temasDelArchivo();
+      sArchivo.dispatchEvent(new Event('change'));
     } catch {
       decirSalida('No se pudo cargar solo el resumen que armaste. Volvé a «Armar un resumen», bajalo y elegilo acá.', true);
       return;
     }
-    if (typeof c.titulo === 'string' && c.titulo.trim() && !sTitulo.value) sTitulo.value = c.titulo.trim().slice(0, 120);
     decirSalida(`Ya está cargado el resumen que armaste (${c.nombre}). Elegí la instancia, confirmá y subilo.`);
   };
   traerCreado();
