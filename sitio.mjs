@@ -5,6 +5,20 @@ import { icono } from './iconos.mjs';
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/** Where the site lives. Link previews (WhatsApp, Telegram, Discord) need the image's full address. */
+export const SITIO = 'https://lutastudios.com/utn';
+
+/** The link preview of a page: its title and description over the book of the home page (plantilla/vista-previa.jpg,
+ * 1200 x 630, copied to _/ by inicio.mjs). */
+export const vistaPrevia = (titulo, descripcion) => `<meta property="og:type" content="website">
+<meta property="og:site_name" content="El Santo Resumen">
+<meta property="og:title" content="${esc(titulo)}">
+<meta property="og:description" content="${esc(descripcion)}">
+<meta property="og:image" content="${SITIO}/_/vista-previa.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">`;
+
 // General pages next to the map. «discreto» ones go at the bottom of the menu, smaller.
 export const SECCIONES = [
   { archivo: 'plan.html', nombre: 'Plan de estudios', icono: 'plan' },

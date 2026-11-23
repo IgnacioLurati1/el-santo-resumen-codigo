@@ -193,6 +193,8 @@ a.c-nom:focus-visible::before { outline: 2.5px solid var(--tinta); outline-offse
 .ba-item { display: grid; grid-template-columns: minmax(0, 1fr) 13rem; grid-template-rows: auto auto 1fr; gap: .3rem 1.4rem; padding: .85rem .1rem; border-bottom: 1px solid var(--borde); font-family: var(--sans); }
 .ba-texto { min-width: 0; }
 .s-hoja .ba-titulo { margin: 0 0 .15rem; font: 650 1.1rem/1.25 var(--sans); color: var(--titulo); overflow-wrap: anywhere; }
+.ba-autor { margin: 0 0 .2rem; font: 500 .92rem/1.4 var(--sans); color: var(--tinta-suave); overflow-wrap: anywhere; }
+.ba-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ba-meta { margin: 0 0 .1rem; font: 400 .92rem/1.45 var(--sans); color: var(--tinta-suave); overflow-wrap: anywhere; }
 .ba-acciones { grid-column: 2; grid-row: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; }
 .ba-bajar { min-width: 7rem; }
@@ -270,6 +272,11 @@ body:has(.ba-completa) { overflow: hidden; }
 .ba-primero { margin-top: .5rem; font: 600 .86rem/1.75 var(--mano); color: var(--tinta); transform: rotate(-4deg); text-decoration: underline wavy var(--rosa-borde) 1.5px; text-underline-offset: .18em; }
 /* A summary's like, where an advice has its score: an outlined heart, filled and pink once it is yours. */
 .ba-gusto { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: flex-start; }
+/* Views and downloads under the heart, centred on it. */
+.ba-cifras { display: flex; flex-direction: column; align-items: center; gap: .2rem; min-width: 3.5rem; margin-top: .5rem; }
+.ba-cifra { display: inline-flex; align-items: center; gap: .25rem; margin: 0; font: 600 .82rem/1.2 var(--sans); font-variant-numeric: tabular-nums; color: var(--tinta-suave); white-space: nowrap; }
+.ba-cifra svg { flex: none; width: .95rem; height: .95rem; fill: none; stroke: currentcolor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ba-esq .ba-cifras { gap: .35rem; }
 .ba-gusta { display: inline-flex; flex-direction: column; align-items: center; gap: .2rem; min-width: 3.5rem; padding: .5rem .55rem .45rem; font: 800 1.45rem/1 var(--sans); letter-spacing: -.02em; color: var(--titulo); background: transparent; border: 1.5px solid var(--borde-control); border-radius: 12px; cursor: pointer; transition: transform .12s ease-out, background-color .14s ease, border-color .14s ease; }
 .ba-gusta svg { width: 1.45rem; height: 1.45rem; fill: none; stroke: var(--tinta-suave); stroke-width: 1.8; stroke-linejoin: round; transition: fill .14s ease, stroke .14s ease; }
 .ba-gusta[aria-pressed='true'] { background: color-mix(in srgb, var(--rosa) 30%, transparent); border-color: var(--rosa-borde); }
@@ -330,6 +337,7 @@ body:has(.ba-completa) { overflow: hidden; }
   .ba-item, .co-item { grid-template-columns: 3.6rem minmax(0, 1fr); padding: 1rem .9rem .9rem; gap: .2rem .9rem; }
   .ba-prom { font-size: 2rem; }
   .ba-gusta { min-width: 3.3rem; padding-inline: .4rem; font-size: 1.25rem; }
+  .ba-cifras { min-width: 3.3rem; }
   .ba-primero { font-size: .8rem; }
   .ba-acciones { grid-column: 1 / -1; grid-row: auto; flex-direction: row; flex-wrap: wrap; align-items: center; margin-top: .6rem; }
   .ba-aviso-bajar { max-width: none; flex: 1 1 12rem; }
@@ -462,6 +470,8 @@ body:has(.ba-completa) { overflow: hidden; }
 .ba-menu:not([hidden]) { @starting-style { opacity: 0; transform: scale(.96); } }
 .ba-menu.ba-menu-arriba { top: auto; bottom: calc(100% + .3rem); transform-origin: bottom right; }
 .ba-menu li + li:has(> [data-peligro]) { margin-top: .25rem; padding-top: .25rem; border-top: 1px solid var(--borde); }
+.ba-menu-info { padding: .45rem .7rem; font: 400 .88rem/1.3 var(--sans); color: var(--tinta-suave); }
+.ba-menu-info:not(:last-child) { margin-bottom: .25rem; border-bottom: 1px solid var(--borde); }
 .ba-menu-op { display: block; width: 100%; padding: .5rem .7rem; font: 500 .95rem/1.3 var(--sans); text-align: left; color: var(--tinta); text-decoration: none; background: none; border: 0; border-radius: 4px; cursor: pointer; }
 .ba-menu-op { transition: background-color .12s ease, transform .1s ease; }
 .ba-menu-op[data-peligro] { color: var(--mal); }

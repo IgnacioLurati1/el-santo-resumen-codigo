@@ -13,7 +13,7 @@ import hljs from 'highlight.js';
 import { bloqueWidget, NOMBRES_BLOQUES, nombresDeInteractivos, prepararInteractivos, validarCreador } from './widgets.mjs';
 import { pieConAviso } from './aviso.mjs';
 import { SIN_VERIFICAR, SIN_VERIFICAR_FIN, banda, botonesEmergencia, copiarServicio, scriptsServicio } from './servicio.mjs';
-import { botonMenu, menu } from './sitio.mjs';
+import { botonMenu, menu, vistaPrevia } from './sitio.mjs';
 import { icono } from './iconos.mjs';
 
 const [fuente, salida] = process.argv.slice(2);
@@ -298,6 +298,7 @@ function layout({ pagina, titulo, cuerpo, toc, desc, em = 'fuera', reportable = 
 <meta name="robots" content="noindex, nofollow">
 <title>${esc(titulo)}: ${esc(materia.nombre)}</title>
 <meta name="description" content="${esc(desc)}">
+${vistaPrevia(`${titulo}: ${materia.nombre}`, desc)}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

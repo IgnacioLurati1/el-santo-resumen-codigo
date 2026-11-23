@@ -169,8 +169,9 @@
         con('p', 'ba-etiquetas', esq('4.1em'), esq('5.8em')),
         con('div', 'ba-hoja', hojaEsq()),
         con('h3', 'ba-titulo', esq(titulo), ' ', esq('45%', 'esq-angosto')),
-        con('p', 'ba-meta', esq(meta), ' ', esq('70%', 'esq-angosto'), ' ', esq('40%', 'esq-angosto'))),
-      con('div', 'ba-gusto', con('span', 'ba-gusta', esq('1.45rem', 'esq-redondo'), con('span', 'ba-gusta-n', esq('1.1em')))),
+        con('p', 'ba-autor', esq('8em')),
+        con('p', 'ba-meta', esq(meta))),
+      con('div', 'ba-gusto', con('span', 'ba-gusta', esq('1.45rem', 'esq-redondo'), con('span', 'ba-gusta-n', esq('1.1em'))), con('div', 'ba-cifras', esq('2.6em'), esq('2.2em'))),
       con('div', 'ba-acciones', esq('5.5rem', 'esq-boton'), con('div', 'ba-cvg', esq('9.6rem', 'esq-boton esq-chico')), con('div', 'ba-menu-caja', esq('2.4rem', 'esq-boton esq-chico')))
     );
     return li;
@@ -368,6 +369,12 @@
       lista2.replaceChildren(...opciones().map((o) => {
         const li = el('li');
         li.setAttribute('role', 'none');
+        // A line to read, not to press: the arrows skip it.
+        if (o.info) {
+          li.className = 'ba-menu-info';
+          li.textContent = o.info;
+          return li;
+        }
         const x = o.href ? el('a', 'ba-menu-op', o.texto) : boton('ba-menu-op', o.texto);
         if (o.href) x.href = o.href;
         x.setAttribute('role', 'menuitem');
@@ -1229,22 +1236,29 @@
   const metaDe = (r) => {
     const partes = [];
     if (!fMateria?.value) partes.push(`${nombreMateria(r.materia)}.`);
-    partes.push(`De ${r.autor || 'anónimo'}.`);
     const version = Number(r.version) || 1;
     const creado = fecha(r.creado);
     const actualizado = fecha(r.actualizado);
     if (version > 1) partes.push(`Versión ${version}${actualizado ? `, actualizada el ${actualizado}` : ''}.`);
     else if (creado) partes.push(`Subido el ${creado}.`);
-    const p = peso(r.bytes);
-    const n = Number(r.descargas) || 0;
-    if (p) partes.push(`${p}.`);
-    // Only what can be read in the page counts views: an HTML, and the preview of a Word or a PowerPoint.
-    if (['html', 'docx', 'pptx'].includes(formatoDe(r.tipo))) {
-      const v = Number(r.lecturas) || 0;
-      partes.push(v === 1 ? '1 visualización.' : `${v} visualizaciones.`);
-    }
-    partes.push(n === 1 ? '1 descarga.' : `${n} descargas.`);
     return partes.join(' ');
+  };
+  const OJO = 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 9.3a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 1 0 0-5.4z';
+  const ABAJO = 'M12 4v11M7 10l5 5 5-5M4 20h16';
+  // Views and downloads, under the heart: an icon and the number, the words for a screen reader and on hover.
+  const cifras = (r) => {
+    const caja = el('div', 'ba-cifras');
+    const cifra = (icono, n, uno, varios) => {
+      const texto = n === 1 ? `1 ${uno}` : `${n.toLocaleString('es-AR')} ${varios}`;
+      const x = el('p', 'ba-cifra');
+      x.title = texto;
+      x.append(trazo(icono), el('span', '', n.toLocaleString('es-AR')), el('span', 'ba-oculto', ` ${n === 1 ? uno : varios}`));
+      return x;
+    };
+    // Only what can be read in the page counts views: an HTML, and the preview of a Word or a PowerPoint.
+    if (['html', 'docx', 'pptx'].includes(formatoDe(r.tipo))) caja.append(cifra(OJO, Math.max(0, Number(r.lecturas) || 0), 'visualización', 'visualizaciones'));
+    caja.append(cifra(ABAJO, Math.max(0, Number(r.descargas) || 0), 'descarga', 'descargas'));
+    return caja;
   };
 
   // A summary only collects likes, so nobody sees a low score. A filled heart against an outlined one, and the button
@@ -1534,6 +1548,7 @@
     const formato = formatoDe(r.tipo);
     li.dataset.formato = formato || 'otro';
     const gusta = meGusta(r);
+    gusta.caja.append(cifras(r));
     // The order already says it, so screen readers go on to the title.
     if (i === 0 && Number(r.me_gusta) > 0) {
       const primero = el('span', 'ba-primero', 'el goat');
@@ -1554,14 +1569,16 @@
     fragmento.hidden = true;
     li.pintarFragmento = (f) => pintarFragmento(fragmento, f);
     // The sheet floats beside the title on a phone. On a wide screen it sits in the card's corner (carrera.css).
-    textoBox.append(etiquetas, hojaDe(r), el('h3', 'ba-titulo', r.titulo));
+    textoBox.append(etiquetas, hojaDe(r), el('h3', 'ba-titulo', r.titulo), el('p', 'ba-autor', `De ${r.autor || 'anónimo'}`));
     if (temas.length) {
       const ul = el('ul', 'ba-temas-r');
       ul.setAttribute('aria-label', 'Etiquetas');
       ul.append(...temas.map((t) => el('li', '', t)));
       textoBox.append(ul);
     }
-    textoBox.append(el('p', 'ba-meta', metaDe(r)), fragmento, gusta.estado);
+    const meta = metaDe(r);
+    if (meta) textoBox.append(el('p', 'ba-meta', meta));
+    textoBox.append(fragmento, gusta.estado);
     // In sight: read (or download, or open in Google), the like on the left and Super CVG. The rest goes in «⋯».
     const acciones = el('div', 'ba-acciones');
     // What a press has to say (a download's warning, a report sent, an error) goes in one line under the buttons.
@@ -1592,7 +1609,7 @@
     } else {
       const bajar = el('a', 'b-pri ba-bajar', 'Bajar');
       bajar.href = S.url('bajar', { id: r.id });
-      bajar.setAttribute('aria-label', `Bajar ${r.titulo}`);
+      bajar.setAttribute('aria-label', `Bajar ${r.titulo}${peso(r.bytes) ? `, ${peso(r.bytes)}` : ''}`);
       bajar.rel = 'nofollow';
       // The warning shows when it matters: right as the file comes down, before it gets opened.
       if (AVISOS_BAJAR[formato]) bajar.addEventListener('click', () => avisar(AVISOS_BAJAR[formato]));
@@ -1609,7 +1626,9 @@
     let denunciado = false;
     // One's own summary is edited, never reported.
     const propio = () => Boolean(S.usuario()) && S.usuario() === r.autor;
+    const pesa = peso(r.bytes);
     const menu = menuMas(r.titulo, () => [
+      ...(pesa ? [{ info: `Pesa ${pesa}` }] : []),
       ...enMenu,
       ...(propio() ? [{ texto: 'Editar en Mis resúmenes', href: `mis-resumenes.html#m-${encodeURIComponent(r.id)}` }] : []),
       ...(denunciado || propio() ? [] : [{

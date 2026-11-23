@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pieConAviso } from './aviso.mjs';
 import { banda, botonCuenta, botonesEmergencia, scriptsServicio } from './servicio.mjs';
-import { APARTE, SECCIONES, botonMenu, filaEnlaces, menu } from './sitio.mjs';
+import { APARTE, SECCIONES, botonMenu, filaEnlaces, menu, vistaPrevia } from './sitio.mjs';
 import { icono } from './iconos.mjs';
 
 export { SECCIONES };
@@ -12,7 +12,7 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const clave = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\(.*?\)/g, ' ').replace(/\b(de|las|los|la|el|en|y)\b/g, ' ').replace(/\s+/g, ' ').trim();
 
 // Sysacad Lindo: the extension's ZIP and its captures (made with invented data) live in secciones/sysacad-lindo/.
-const SYSACAD = { version: '2.4.1', zip: 'sysacad-lindo-2.4.1.zip' };
+const SYSACAD = { version: '2.5.0', zip: 'sysacad-lindo-2.5.0.zip', xpi: 'sysacad-lindo-2.5.0.xpi' };
 const CAPTURAS_SYSACAD = [
   ['mapa', 1040, 865, 'Mapa de correlativas, por año.', 'Mapa de correlativas de la carrera, con las materias en columnas por año y líneas que las unen.'],
   ['correlativas', 1100, 1289, 'Correlativas para cursar, con lo que más te frena arriba.', 'Página de correlatividades para cursar, con un recuadro «Lo que más te frena» y tablas por año.'],
@@ -46,6 +46,7 @@ const pagina = (s, descripcion, cuerpo) => `<!doctype html>
 <meta name="robots" content="noindex, nofollow">
 <title>${esc(s.nombre)}: Ingeniería en Sistemas, UTN</title>
 <meta name="description" content="${esc(descripcion)}">
+${vistaPrevia(`${s.nombre}. El Santo Resumen`, descripcion)}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -291,13 +292,17 @@ ${parte(4, ' pv-borrar pg-caja')}
 </div>
 </div>`;
 
-  const tamZip = Math.round(fs.statSync(path.join(aqui, 'secciones', 'sysacad-lindo', SYSACAD.zip)).size / 1024);
-  // The download goes at the top and again next to the steps, where it is needed.
+  const tamKb = (archivo) => Math.round(fs.statSync(path.join(aqui, 'secciones', 'sysacad-lindo', archivo)).size / 1024);
+  const tamZip = tamKb(SYSACAD.zip);
+  const tamXpi = tamKb(SYSACAD.xpi);
+  // The download goes at the top and again next to the steps, where it is needed. The Firefox link has no `download`
+  // attribute, so Firefox offers to install the signed XPI instead of saving it. It counts in the same download event:
+  // the `utn` function only accepts the events it knows.
   const flechaBajar = '<svg class="sy-i" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M24 6v26"/><path d="M15 23l9 9 9-9"/><path d="M7 30v11h34V30"/></svg>';
-  const bajar = (clase) => `<p class="sy-bajar"><a class="${clase}" href="_/sysacad/${SYSACAD.zip}" download data-uso="sysacad-bajado">${flechaBajar}Bajar Sysacad Lindo ${SYSACAD.version}</a> <span class="s-nota">Archivo ZIP, ${tamZip} KB</span></p>`;
-  const sysacadHtml = `<p class="bajada">Una extensión para Chrome o Edge que ordena Sysacad. Tu carrera por año, las correlativas en un mapa, modo oscuro y filtros. No guarda tu contraseña ni manda nada a ningún lado.</p>
+  const bajar = (clase) => `<p class="sy-bajar"><a class="${clase}" href="_/sysacad/${SYSACAD.zip}" download data-uso="sysacad-bajado">${flechaBajar}Bajar Sysacad Lindo ${SYSACAD.version}</a> <span class="s-nota">Archivo ZIP, ${tamZip} KB</span> <a class="b-sec" href="_/sysacad/${SYSACAD.xpi}" data-uso="sysacad-bajado">${flechaBajar}Bajar para Firefox</a> <span class="s-nota">Archivo XPI, ${tamXpi} KB</span></p>`;
+  const sysacadHtml = `<p class="bajada">Una extensión para Chrome, Edge o Firefox que ordena Sysacad. Tu carrera por año, las correlativas en un mapa, modo oscuro y filtros. No guarda tu contraseña ni manda nada a ningún lado.</p>
 ${bajar('b-pri')}
-<div class="ojo sy-aviso" role="note"><p class="ojo-t">Las inscripciones todavía no están probadas</p><p>Alumnado tiene cerradas las inscripciones, así que no pudimos probar esa parte de la extensión. Si al inscribirte algo no anda, desactivala en <code>chrome://extensions</code> o <code>edge://extensions</code> y usá Sysacad como siempre.</p></div>
+<div class="ojo sy-aviso" role="note"><p class="ojo-t">Las inscripciones todavía no están probadas</p><p>Alumnado tiene cerradas las inscripciones, así que no pudimos probar esa parte de la extensión. Si al inscribirte algo no anda, desactivala en <code>chrome://extensions</code>, <code>edge://extensions</code> o <code>about:addons</code> en Firefox y usá Sysacad como siempre.</p></div>
 <div class="sy-heroe" aria-hidden="true"><span class="sy-pegada sy-atras"><img src="_/sysacad/estado-oscuro.webp" width="1100" height="1480" decoding="async" alt=""></span><span class="sy-pegada sy-frente"><img src="_/sysacad/mapa.webp" width="1040" height="865" fetchpriority="high" decoding="async" alt=""></span></div>
 <section class="s-bloque sy-parte sy-santo" aria-labelledby="sySanto"><div class="sy-ver-cabeza"><h2 id="sySanto">Tu mapa de materias, pintado solo</h2>
 <p class="pg-nota">Nuevo en la 2.2.0.</p></div>
@@ -321,7 +326,8 @@ ${bajar('b-sec')}</div>
 <li>Tocá «Cargar descomprimida» y elegí la carpeta <code>sysacad-lindo</code>.</li>
 <li>Entrá a Sysacad como siempre. La extensión anda en <code>alumnos.frro.utn.edu.ar</code> y, si la vinculás, también le pasa a El Santo Resumen tus aprobadas y regulares.</li>
 </ol>
-<p class="pg-nota">Para pasar a una versión nueva, bajala, reemplazá la carpeta y tocá el botón de recargar de la extensión en la misma página.</p></section>
+<p class="pg-nota">Para pasar a una versión nueva, bajala, reemplazá la carpeta y tocá el botón de recargar de la extensión en la misma página.</p>
+<p class="pg-nota">En Firefox: tocá «Bajar para Firefox», después «Continuar con la instalación» y «Agregar». Hace falta Firefox 140 o más nuevo. Para pasar a una versión nueva, instalala igual encima.</p></section>
 <section class="s-bloque sy-parte" aria-labelledby="syHace"><h2 id="syHace">Qué hace</h2>
 <ul class="sy-lista" role="list">
 <li><b>Estado académico por año</b>, con tu promedio y cuánto te falta.</li>
@@ -389,7 +395,7 @@ ${bajar('b-sec')}</div>
     'mis-resumenes.html': ['Los resúmenes que subiste al banco y en qué está cada uno.', misHtml],
     'crear.html': ['Armá un resumen con texto, fórmulas, fotos y gráficos de la materia, para bajarlo, compartirlo o subirlo al banco.', crearHtml],
     'privacidad.html': ['Qué se guarda en este sitio, para qué y por cuánto tiempo.', privacidadHtml],
-    'sysacad-lindo.html': ['Extensión para Chrome o Edge que ordena Sysacad por año, con mapa de correlativas y modo oscuro.', sysacadHtml],
+    'sysacad-lindo.html': ['Extensión para Chrome, Edge o Firefox que ordena Sysacad por año, con mapa de correlativas y modo oscuro.', sysacadHtml],
     'novedades.html': ['Qué cambió en El Santo Resumen, fecha por fecha.', novedadesHtml],
   };
   for (const s of [...SECCIONES, ...APARTE]) fs.writeFileSync(path.join(salida, s.archivo), pagina(s, ...textos[s.archivo]));

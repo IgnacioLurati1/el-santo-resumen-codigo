@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pieConAviso } from './aviso.mjs';
 import { banda, botonCuenta, botonesEmergencia, scriptsServicio } from './servicio.mjs';
-import { botonMenu, entradasInicio, enlace, filaEnlaces, menu } from './sitio.mjs';
+import { botonMenu, entradasInicio, enlace, filaEnlaces, menu, vistaPrevia } from './sitio.mjs';
 import { icono as dibujo } from './iconos.mjs';
 import { TIPOS_CON_NIVEL } from './niveles.mjs';
 
@@ -63,6 +63,7 @@ export const armarInicio = ({ aqui, fuente, salida, materias, listo, pasadas }) 
 <meta name="robots" content="noindex, nofollow">
 <title>El Santo Resumen. Ingeniería en Sistemas, UTN</title>
 <meta name="description" content="Resúmenes de todas las materias de Ingeniería en Sistemas de la UTN, con quiz y ejercicios de exámenes reales.">
+${vistaPrevia('El Santo Resumen', 'Resúmenes de todas las materias de Ingeniería en Sistemas de la UTN, con quiz y ejercicios de exámenes reales.')}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -117,5 +118,5 @@ ${pieConAviso('Una iniciativa de <a href="https://lutastudios.com/">Luta Studios
 </html>
 `;
   fs.writeFileSync(path.join(salida, 'index.html'), html);
-  for (const f of ['inicio.css', 'inicio.js', 'inicio3d.js']) fs.copyFileSync(path.join(aqui, 'plantilla', f), path.join(salida, '_', f));
+  for (const f of ['inicio.css', 'inicio.js', 'inicio3d.js', 'vista-previa.jpg']) fs.copyFileSync(path.join(aqui, 'plantilla', f), path.join(salida, '_', f));
 };

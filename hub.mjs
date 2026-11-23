@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { armarSecciones } from './secciones.mjs';
-import { SECCIONES, botonMenu, filaEnlaces, menu } from './sitio.mjs';
+import { SECCIONES, botonMenu, filaEnlaces, menu, vistaPrevia } from './sitio.mjs';
 import { CAMBIO_RAPIDO, NIVELES, TIPOS_CON_NIVEL, esRapida, leerNiveles, leerPasadas, nivelDe } from './niveles.mjs';
 import { pieConAviso } from './aviso.mjs';
 import { banda, botonCuenta, botonesEmergencia, copiarServicio, scriptsServicio } from './servicio.mjs';
@@ -69,6 +69,7 @@ const html = `<!doctype html>
 <meta name="robots" content="noindex, nofollow">
 <title>Todas las materias. El Santo Resumen, Ingeniería en Sistemas, UTN</title>
 <meta name="description" content="El plan de Ingeniería en Sistemas de la UTN como mapa, con el resumen de cada materia.">
+${vistaPrevia('Todas las materias. El Santo Resumen', 'El plan de Ingeniería en Sistemas de la UTN como mapa, con el resumen de cada materia.')}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
